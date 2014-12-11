@@ -17,13 +17,14 @@ def kernel_square(nPix):
     kernel /= kernel.sum()   # kernel should sum to 1!  :)
     return kernel
 
-def smooth(mat, kernel):
+def smooth(mat, nPix):
     """
     Function that produce a smothed version of the 2D array
     :param mat: Array to smooth
     :param kernel: kernal array (output) from the function kernel_square()
     :return: smoothed array
     """
+    kernel = kernel_square(nPix)
     r = cv2.filter2D(mat, -1, kernel)
     print "Done ..."
     return r
