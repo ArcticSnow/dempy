@@ -11,3 +11,4 @@ Python Module For DEM manipulation
 Requires to install third party libraries for using certain function:
     pyfftw
     pypismtools
+    openCV

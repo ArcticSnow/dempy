@@ -9,7 +9,7 @@ import gdal, sys, osr, os, time
 from gdalconst import *
 from Tkinter import *
 import tkFileDialog
-
+import matplotlib.pyplot as plt
 import numpy as np
 
 # function to load a raster file
@@ -107,6 +107,17 @@ def saveArray2rasterTif(fname, array, rasterOrigin, pixelWidth, pixelHeight, _Fi
     outRasterSRS.ImportFromEPSG(32606)  #EPGS code for WGS 84/ UTM zone 6N
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
+
+
+def plot_raster(mat):
+    plt.figure()
+    plt.imshow(mat)
+    plt.colorbar()
+    plt.title()
+    plt.show()
+
+
+
 
 #======================= Test Zone =======================================
 
