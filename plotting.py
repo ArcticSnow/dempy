@@ -5,6 +5,8 @@ Created on Thu May 15 23:06:08 2014
 @author: simonfilhol
 """
 from matplotlib import pyplot as plt
+
+
 def thinningCheckup(fvec,DispOption=None):
     '''
     Function part of plotPeriodogram()
@@ -15,6 +17,7 @@ def thinningCheckup(fvec,DispOption=None):
         print "You should use a thinning of " + str(int(fvec.size/50000))
     thinning = int(fvec.size/10000)
     return thinning
+
 
 def plotPeriodogram(fvec, pvec,  axes=None, thinning=None):
     '''
@@ -47,7 +50,8 @@ def plotPeriodogram(fvec, pvec,  axes=None, thinning=None):
     plt.ylabel("DFT mean square amplitude")
     plt.xlabel("Frequency (1/m)")
     plt.show()
-    
+
+
 def plotMap(Map,Zmin,Zmax,Cmap='gray',Title=None):
     '''
     Function to plot map image
@@ -63,20 +67,3 @@ def plotMap(Map,Zmin,Zmax,Cmap='gray',Title=None):
     if Title != None:
         plt.title(Title)
     plt.show()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

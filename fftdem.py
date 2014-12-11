@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pyfftw
-
-
 from dempy import linearDetrend
 
 
@@ -149,7 +147,6 @@ def fftdem(dem, dx, dy=None, pad=None, window=None):
     fvec = fvec[:,0]
     
     return M, Pmat, fmat, Pvec, fvec
-    
 
 
 def gaussian(freqmat, mu, sigma):
@@ -161,6 +158,7 @@ def gaussian(freqmat, mu, sigma):
     G=np.exp(-(freqmat-mu)**2/(2*sigma**2))
     G=G/np.max(G.flatten())
     return G
+
 
 def specfilt2d(fmat,f,filtype):
     '''
