@@ -17,11 +17,12 @@ def kernel_square(nPix):
     kernel /= kernel.sum()   # kernel should sum to 1!  :)
     return kernel
 
+
 def smooth(mat, nPix):
     """
-    Function that produce a smothed version of the 2D array
+    Function that produce a smoothed version of the 2D array
     :param mat: Array to smooth
-    :param kernel: kernal array (output) from the function kernel_square()
+    :param nPix: kernel array (output) from the function kernel_square()
     :return: smoothed array
     """
     kernel = kernel_square(nPix)
@@ -55,8 +56,7 @@ def compare_smooth(mat, nCompare = None, kPixMax = None):
     kPix = np.round(np.linspace(10,kPixMax,nCompare))
     matSmoo = np.ones([mat.shape[0],mat.shape[1],nCompare])
     for i in range(0, nCompare):
-        kernel = kernel_square(kPix[i])
-        matSmoo[:,:,i] = smooth(mat, kernel)
+        matSmoo[:,:,i] = smooth(mat, kPix[i])
     return matSmoo
 
 def plot_compare(matSmoo, ncol, nrow, nCompare = None, kPixMax = None, residual = False, matRef = None):
