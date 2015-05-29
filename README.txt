@@ -12,3 +12,4 @@ Requires to install third party libraries for using certain function:
     pyfftw
     pypismtools
     openCV
+    gdal
