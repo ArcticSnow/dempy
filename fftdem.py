@@ -36,7 +36,7 @@ def hann2d(M):
 def fftdem(dem, dx, dy=None, pad=None, window=None):
     '''
     **M, Pmat, fmat, Pvec, fvec = fftdem(dem, dx, dy, pad, window)** \n
-    Compute the Fourier transform of a Digital Elevation Model (DEM) (2D array) \n
+    Compute the Fourier transform of a Digital Elevation Model (DEM) (2D   array) \n
     dependency: hann2D()
     
     Parameters
