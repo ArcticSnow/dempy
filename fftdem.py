@@ -11,7 +11,7 @@ def hann2d(M):
     **H, Wss = hann2d(M)** \n
     dependencies : numpy    \n
     Parameters
-    ----------
+    ------------
     **M** : 2D array
     Returns
     -------
