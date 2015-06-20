@@ -59,6 +59,9 @@ def truncate(xyz, Xextent, Yextent):
     ycut1 = ycut[ycut[:,1]<Yextent[1]]
     return ycut1
 
+def get_slice(xyz,):
+
+
 def translate_coords(coords, xyz_trans = None ,ask = True):
     if xyz_trans is None:
         xyz_trans = [coords[:,0].min(), coords[:,1].min(), coords[:,2].min()]
