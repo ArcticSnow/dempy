@@ -2,7 +2,8 @@ from __future__ import division
 from laspy.file import File
 import numpy as np
 import pandas as pd
-import time
+import pcl
+import time, math
 
 def timing(f):
     def wrap(*args):
@@ -59,7 +60,67 @@ def truncate(xyz, Xextent, Yextent):
     ycut1 = ycut[ycut[:,1]<Yextent[1]]
     return ycut1
 
-def get_slice(xyz,):
+def cart2cyl(xyz, xy_axis=None):
+    '''
+    function to convert cartesina coordinates to cylindrical
+    xy_axis is an array of x and y coordinate for the center of the new cylindrical coordinate
+    '''
+    if xy_axis is not None:
+        xyz[:,0] =  xyz[:,0] - xy_axis[:,0]
+        xyz[:,1] =  xyz[:,1] - xy_axis[:,1]
+    rho = np.sqrt(xyz[:,0]**2 + xyz[:,1]**2)
+    phi = np.arctan2(xyz[:,1], xyz[:,0])
+    rpz = np.hstack((rho,phi,xyz[:,2]))
+    return rpz
+
+def cyl2cart(rpz):
+    '''
+    convert cylindrical coordinate to cartesian
+    '''
+    x = rpz[:,0] * np.cos(rpz[:,1])
+    y = rpz[:,0] * np.sin(rpz[:,1])
+    xyz = np.hstack((x,y,rpz[:,2]))
+    return xyz
+
+def rotate_cloud(xyz, angle, center_coord=None):
+    '''
+    Function to rotate a point cloud
+    :param xyz: n*3 array containing point cloud coordinates in a cartesian system
+    :param angle: angle of rotation in radians
+    :param center_coord: tuple with xy coordiantes of the center of rotation. Default is None
+    :return: the rotated xyz point cloud
+    '''
+
+    Function to rotate cloud expressed in cartesian coordinate system
+    of a given angle (radian) around the center point center_coord
+
+    if center_coord is None:
+        center_coord = (np.mean(xyz[:,0]),np.mean(xyz[:,1]))
+    rpz = cart2cyl(xyz, center_coord)
+    rpz[:,1] = rpz[:,1]+angle
+    xyz = cyl2cart(rpz)
+    return xyz
+
+def get_slice(xyz, thick, dir=0, center_coord=None):
+    '''
+    Function to extract a slice of the point cloud xyz
+    :param xyz: n*3 array containing point cloud coordinates in a cartesian system
+    :param thick: thickness of the slice
+    :param dir: direction of the slice in radians (default is 0)
+    :param center_coord: tuple with xy coordiantes of the center of rotation. Default is None
+    :return: return slice in xyz format.
+    '''
+    if center_coord is None:
+        center_coord = (np.mean(xyz[:,0]),np.mean(xyz[:,1]))
+    if dir % math.pi != 0:
+        xyz = rotate_cloud(xyz, dir, center_coord= center_coord)
+    myslice = xyz[xyz[:,0]>=(thick/2)]
+    myslice = myslice[myslice[:,0]<=(thick/2)]
+    return myslice
+
+
+
+
 
 
 def translate_coords(coords, xyz_trans = None ,ask = True):
@@ -117,5 +178,10 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     print 'Data grouped, \nReady to go!!'
     return grouped
 
-def voxelPCL(grouped):
-    grouped
+def voxelPCL(mypcl,dx,dy,dz):
+    # function to voxelize a point cloud using Point Cloud Library
+    p = pcl.PointCloud(mypcl)
+    vox = p.make_voxel_grid_filter()
+    vox.set_leaf_size(dx,dy,dz)
+    c = vox.filter()
+    return c
