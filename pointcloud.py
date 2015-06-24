@@ -16,6 +16,11 @@ def timing(f):
 
 @timing
 def loadLAS2XYZ(filepath):
+    '''
+    Function to load in console the pointcloud of a LAS file
+    :param filepath: filepath of the LAS file
+    :return: xyz array containing coordinate of the points
+    '''
     print 'Start loading...'
     inFile = File(filepath, mode='r')
     coords = np.vstack((inFile.x, inFile.y, inFile.z)).transpose()
@@ -23,6 +28,12 @@ def loadLAS2XYZ(filepath):
     return coords
 
 def LAS2txt(filepath,newfile):
+    '''
+    Function to convert a pointcloud save in LAS format into a .txt format
+    :param filepath: filepath of the LAS file
+    :param newfile: name of the new file
+    :return: save data into a text file
+    '''
     inFile = File(filepath, mode='r')
     coords = np.vstack((inFile.x, inFile.y, inFile.z)).transpose()
     if newfile[-4] != '.txt':
@@ -66,12 +77,12 @@ def cart2cyl(xyz, xy_axis=None):
     xy_axis is an array of x and y coordinate for the center of the new cylindrical coordinate
     '''
     if xy_axis is not None:
-        xyz[:,0] =  xyz[:,0] - xy_axis[:,0]
-        xyz[:,1] =  xyz[:,1] - xy_axis[:,1]
+        xyz[:,0] =  xyz[:,0] - xy_axis[0]
+        xyz[:,1] =  xyz[:,1] - xy_axis[1]
     rho = np.sqrt(xyz[:,0]**2 + xyz[:,1]**2)
     phi = np.arctan2(xyz[:,1], xyz[:,0])
-    rpz = np.hstack((rho,phi,xyz[:,2]))
-    return rpz
+    rpz = np.vstack((rho,phi,xyz[:,2]))
+    return rpz.transpose()
 
 def cyl2cart(rpz):
     '''
@@ -79,25 +90,21 @@ def cyl2cart(rpz):
     '''
     x = rpz[:,0] * np.cos(rpz[:,1])
     y = rpz[:,0] * np.sin(rpz[:,1])
-    xyz = np.hstack((x,y,rpz[:,2]))
-    return xyz
+    xyz = np.vstack((x,y,rpz[:,2]))
+    return xyz.transpose()
 
 def rotate_cloud(xyz, angle, center_coord=None):
     '''
     Function to rotate a point cloud
     :param xyz: n*3 array containing point cloud coordinates in a cartesian system
-    :param angle: angle of rotation in radians
+    :param angle: angle of rotation in degrees
     :param center_coord: tuple with xy coordiantes of the center of rotation. Default is None
     :return: the rotated xyz point cloud
     '''
-
-    Function to rotate cloud expressed in cartesian coordinate system
-    of a given angle (radian) around the center point center_coord
-
     if center_coord is None:
-        center_coord = (np.mean(xyz[:,0]),np.mean(xyz[:,1]))
-    rpz = cart2cyl(xyz, center_coord)
-    rpz[:,1] = rpz[:,1]+angle
+        center_coord = [np.mean(xyz[:,0]),np.mean(xyz[:,1])]
+    rpz = cart2cyl(xyz, xy_axis=center_coord)
+    rpz[:,1] = rpz[:,1] + angle
     xyz = cyl2cart(rpz)
     return xyz
 
@@ -106,24 +113,47 @@ def get_slice(xyz, thick, dir=0, center_coord=None):
     Function to extract a slice of the point cloud xyz
     :param xyz: n*3 array containing point cloud coordinates in a cartesian system
     :param thick: thickness of the slice
-    :param dir: direction of the slice in radians (default is 0)
-    :param center_coord: tuple with xy coordiantes of the center of rotation. Default is None
+    :param dir: direction of the slice in degrees (default is 0)
+    :param center_coord: tuple with xy coordinates of the center of rotation. Default is None
     :return: return slice in xyz format.
     '''
     if center_coord is None:
-        center_coord = (np.mean(xyz[:,0]),np.mean(xyz[:,1]))
-    if dir % math.pi != 0:
-        xyz = rotate_cloud(xyz, dir, center_coord= center_coord)
-    myslice = xyz[xyz[:,0]>=(thick/2)]
+        center_coord = [np.mean(xyz[:,0]),np.mean(xyz[:,1])]
+        print center_coord
+    if dir % 180 != 0:
+        xyz = rotate_cloud(xyz, (dir*math.pi/180), center_coord= center_coord)
+    myslice = xyz[xyz[:,0]>=-(thick/2)]
     myslice = myslice[myslice[:,0]<=(thick/2)]
     return myslice
 
 
-
-
+def get_slice_df(df_xyz, thick, dir=0, center_coord=None):
+    '''
+    Function to extract a slice of points from a dataframe
+    :param xyz: n*3 array containing point cloud coordinates in a cartesian system
+    :param thick: thickness of the slice
+    :param dir: direction of the slice in degrees (default is 0)
+    :param center_coord: tuple with xy coordinates of the center of rotation. Default is None
+    :return: return slice in xyz format.
+    '''
+    if center_coord is None:
+        center_coord = [df_xyz['x'].mean(),df_xyz['y'].mean()]
+        print center_coord
+    if dir % 180 != 0:
+        xyz = rotate_cloud(df_xyz[['x','y','z']], (dir*math.pi/180), center_coord = center_coord)
+    df_xyz[['x','y']] = xyz[:,[0,1]]
+    myslice = df_xyz[[df_xyz.x>=-(thick/2) and df_xyz.x<=(thick/2)]]
+    return myslice
 
 
 def translate_coords(coords, xyz_trans = None ,ask = True):
+    '''
+    Function to translate a point cloud
+    :param coords: an xyz array
+    :param xyz_trans: vector of translation in [x,y,z]
+    :param ask: if True (default) brings an interactive console for approving the translation
+    :return: translated xyz array
+    '''
     if xyz_trans is None:
         xyz_trans = [coords[:,0].min(), coords[:,1].min(), coords[:,2].min()]
     if ask is True:
@@ -140,6 +170,17 @@ def translate_coords(coords, xyz_trans = None ,ask = True):
 
 @timing
 def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
+    '''
+    Fucntion to bin a scatter point cloud (xyz) into a 2d array
+    :param myXYZ: xyz array containings the point cloud coordiantes
+    :param xstart:
+    :param xend:
+    :param ystart:
+    :param yend:
+    :param nx: number of cells along the x-axis
+    :param ny: number of cells along hte y-axis
+    :return: a group object (pandas library) with all points classified into bins
+    '''
     # note, the division requires:     from __future__ import division
     x = myXYZ[:,0].ravel()
     y = myXYZ[:,1].ravel()
@@ -159,6 +200,7 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
 
 @timing
 def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
+    # WARNING function not working!!!!!!!!
     x = xyz[:,0].ravel()
     y = xyz[:,1].ravel()
     z = xyz[:,2].ravel()
@@ -180,6 +222,7 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
 
 def voxelPCL(mypcl,dx,dy,dz):
     # function to voxelize a point cloud using Point Cloud Library
+    # NOT tested !!!!
     p = pcl.PointCloud(mypcl)
     vox = p.make_voxel_grid_filter()
     vox.set_leaf_size(dx,dy,dz)
