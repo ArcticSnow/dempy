@@ -136,15 +136,32 @@ def get_slice_df(df_xyz, thick, dir=0, center_coord=None):
     :param center_coord: tuple with xy coordinates of the center of rotation. Default is None
     :return: return slice in xyz format.
     '''
+    df = df_xyz.copy()
+    df_xyz=None
     if center_coord is None:
-        center_coord = [df_xyz['x'].mean(),df_xyz['y'].mean()]
+        center_coord = [df['x'].mean(),df['y'].mean()]
         print center_coord
     if dir % 180 != 0:
-        xyz = rotate_cloud(df_xyz[['x','y','z']], (dir*math.pi/180), center_coord = center_coord)
-    df_xyz[['x','y']] = xyz[:,[0,1]]
-    myslice = df_xyz[[df_xyz.x>=-(thick/2) and df_xyz.x<=(thick/2)]]
+        xyz = rotate_cloud(np.array(df[['x','y','z']]), (dir*math.pi/180), center_coord = center_coord)
+        df[['x','y']] = xyz[:,[0,1]]
+        myslice = df[df.x >= - (thick / 2)]
+        myslice = myslice[df.x <= (thick/2)]
+    else:
+        myslice = df[df.x >= (center_coord[0] - thick / 2)]
+        myslice = myslice[df.x <= (center_coord[0] + thick / 2)]
+        myslice['x'] = myslice['x'] - center_coord[0]
+        myslice['y'] = myslice['y'] - center_coord[1]
+    print 'Data Sliced'
     return myslice
 
+def center_pc_coord_df(df_xyz, center_coord=None):
+    if center_coord is None:
+        center_coord = [(df_xyz['x'].max()-df_xyz['x'].min())/2 + df_xyz['x'].min(),
+                        (df_xyz['y'].max()-df_xyz['y'].min())/2 +df_xyz['y'].min()]
+        print center_coord
+    df_xyz['x'] = df_xyz['x'] - center_coord[0]
+    df_xyz['y'] = df_xyz['y'] - center_coord[1]
+    return df_xyz
 
 def translate_coords(coords, xyz_trans = None ,ask = True):
     '''
@@ -200,7 +217,7 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
 
 @timing
 def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
-    # WARNING function not working!!!!!!!!
+    # not ready !!!!
     x = xyz[:,0].ravel()
     y = xyz[:,1].ravel()
     z = xyz[:,2].ravel()
@@ -216,15 +233,44 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     dy = (yend - ystart)/ny
     dz = (zend - zstart)/nz
     print 'dx = ' + str(dx) + ' ; dy = ' + str (dy) + ' ; dz = ' + str (dz)
-    grouped = df.groupby([x_cuts,y_cuts,z_cuts])
+
+    # create a 3D array
+    my3d = np.zeros((len(x_cuts),len(y_cuts),len(z_cuts))) * np.nan
+
+    # for loop through the vertical cuts of the poitn clouf to extrac 2d array for each
+    for i in np.arange(z_cuts.min(),z_cuts.max()):
+        subdf = df[z_cuts==i]
+        # group layer into false and true depnding if presence of points or not
+        grouped = subdf.groupby([x_cuts,ycuts]).filter(lambda x: np.shape(x)[0]>=1)
+
+        #unstack group into a 2d array
+        z = grouped.Z
+        
+        # add 2d array to 3d array
+        my3d[:,:,i] = my2d
     print 'Data grouped, \nReady to go!!'
-    return grouped
+    return my3d #3D array
+
+
+def voxel_df(df,leaf):
+    '''
+    Function to voxelize point cloud in a data frame format
+    Code based on
+    :param df: data frame containing the point cloud
+    :param leaf: size of the voxel
+    :return:
+    '''
+
 
 def voxelPCL(mypcl,dx,dy,dz):
     # function to voxelize a point cloud using Point Cloud Library
-    # NOT tested !!!!
-    p = pcl.PointCloud(mypcl)
+    # Runs, but output is meaningless.
+    p = pcl.PointCloud()
+    if mypcl.dtype != 'float32':
+        mypcl.dtype=np.float32
+    p.from_array(mypcl)
     vox = p.make_voxel_grid_filter()
     vox.set_leaf_size(dx,dy,dz)
     c = vox.filter()
+    print 'voxel ready'
     return c
