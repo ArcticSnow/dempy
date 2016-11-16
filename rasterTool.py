@@ -7,8 +7,8 @@ Created on Thu May 15 19:53:00 2014
 
 import gdal, sys, osr, os, time
 from gdalconst import *
-from Tkinter import *
-import tkFileDialog
+from tkinter import *
+import tkinter.filedialog as tkFileDialog
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -37,9 +37,9 @@ def openRaster(InPath=None):
         root.destroy()
         root.quit()
     if InPath is None:
-        print 'Could not open image'
+        print('Could not open image')
         sys.exit(1)
-    print InPath
+    print(InPath)
     myRaster=gdal.Open(InPath)
     return myRaster
     
@@ -104,7 +104,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue,OutPath=Non
     outband.SetNoDataValue(_FillValue)
     outband.WriteArray(array)
     outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(32606)  #EPGS code for WGS 84/ UTM zone 6N
+    outRasterSRS.ImportFromEPSG(32632)  # 32632 for Finse,  32606EPGS code for WGS 84/ UTM zone 6N
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
 
@@ -114,6 +114,30 @@ def plot_raster(raster, band):
     plt.imshow(mat)
     plt.colorbar()
     plt.show()
+
+
+def get_pt_value_rasterfile(rasterfile, Xs, Ys):
+  gdata = gdal.Open(rasterfile)
+  gt = gdata.GetGeoTransform()
+  data = gdata.ReadAsArray().astype(np.float)
+  gdata = None
+  x = (Xs - gt[0])/gt[1]
+  y = (Ys - gt[3])/gt[5]
+  return data[y.astype('int'), x.astype('int')]
+
+def get_pt_value_array(myarray, geotransform, Xs, Ys):
+  x = (Xs - geotransform[0])/geotransform[1]
+  y = (Ys - geotransform[3])/geotransform[5]
+  return myarray[y.astype('int'), x.astype('int')]
+
+
+def get_pt_value_raster(myraster, Xs, Ys):
+  gt = myraster.GetGeoTransform()
+  data = myraster.ReadAsArray().astype(np.float)
+  gdata = None
+  x = (Xs - gt[0])/gt[1]
+  y = (Ys - gt[3])/gt[5]
+  return data[y.astype('int'), x.astype('int')]
 
 
 def plot_matrix(mat):
