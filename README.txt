@@ -14,3 +14,10 @@ Requires to install third party libraries for using certain function:
     openCV
     gdal
     pcl and pcl-python bindings
+    pyproj
+    numpy
+    matplotlib
+    scipy
+    cv2
+    tkinter
+    laspy
