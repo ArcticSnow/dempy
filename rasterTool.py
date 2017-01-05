@@ -82,7 +82,7 @@ def makeGeotransform(Xmin, dx, Ymax, dy):
 
     Note: more info http://www.perrygeo.com/python-affine-transforms.html
     '''
-    return [Xmin, dx, 0, Ymax, dy, 0]
+    return [Xmin, dx, 0, Ymax, 0, -dy]
 
 
 # function to save results as a geotiff raster file
