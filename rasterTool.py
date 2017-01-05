@@ -86,19 +86,20 @@ def makeGeotransform(Xmin, dx, Ymax, dy):
 
 
 # function to save results as a geotiff raster file
-def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutPath=None):
+def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutPath=None, epsg=32632):
     '''
     Save to a GeoTiff file the array\n
-    **saveArray2rasterTif(filename, transform, myArray, OutPath)** \n
-    Copyright S Filhol \n
-    Dependencies: gdal, os, Tkinter, osr  
-    
-    Parameters
-    ----------    
-    **fname** :  string of the new file name \n
-    **array** : 2D matrix containing the data to save as a raster file \n
-    **rasterOrigin**
-    **OutPath** : optional. String indicating the path where to save the file \n
+    **saveArray2rasterTif(filename, transform, myArray, OutPath)**
+    Copyright S Filhol
+    Dependencies: gdal, os, Tkinter, osr
+
+    :param fname:  string of the new file name
+    :param array: 2D matrix containing the data to save as a raster file. If orientation of array in final raster is lipped try using    np.flipud(array)  as input
+    :param rasterGeotransform:
+    :param _FillValue: default -9999
+    :param OutPath: optional. String indicating the path where to save the file \n
+    :param epsg: projecton epsg code. default is 32632 for finse UTM 32N. 32606 for 6N (northern Alaska)
+    :return:
     '''
     
     if OutPath==None:
@@ -119,7 +120,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutP
     outband.SetNoDataValue(_FillValue)
     outband.WriteArray(array)
     outRasterSRS = osr.SpatialReference()
-    outRasterSRS.ImportFromEPSG(32632)  # 32632 for Finse,  32606EPGS code for WGS 84/ UTM zone 6N
+    outRasterSRS.ImportFromEPSG(epsg)
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
 
@@ -155,9 +156,9 @@ def get_pt_value_raster(myraster, Xs, Ys):
   return data[y.astype('int'), x.astype('int')]
 
 
-def plot_matrix(mat):
+def plot_array(mat):
     plt.figure()
-    plt.imshow(mat)
+    plt.imshow(mat, origin='lower')
     plt.colorbar()
     plt.show()
 
