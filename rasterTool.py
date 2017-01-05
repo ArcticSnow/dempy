@@ -71,7 +71,7 @@ def raster2array(myRaster):
     return data, dx, dy, transform
 
 
-def makeGeotransform(Xmin, dx, , Ymax, dy):
+def makeGeotransform(Xmin, dx, Ymax, dy):
     '''
 
     :param Xmin: x-coordinate of the upper left corner
@@ -86,7 +86,7 @@ def makeGeotransform(Xmin, dx, , Ymax, dy):
 
 
 # function to save results as a geotiff raster file
-def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue,OutPath=None):
+def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutPath=None):
     '''
     Save to a GeoTiff file the array\n
     **saveArray2rasterTif(filename, transform, myArray, OutPath)** \n
