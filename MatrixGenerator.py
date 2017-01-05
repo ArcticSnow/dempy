@@ -28,10 +28,10 @@ def surfaceMaker(MatSize,Coords,fun):
     
     '''
     if np.size(MatSize)!=2:
-        print "MatSize argument requires 2 integers as input such as (Xsize, Ysize)"
+        print("MatSize argument requires 2 integers as input such as (Xsize, Ysize)")
         return
     if np.size(Coords)!=4:
-        print "Coords argument requires 4 real number such as (Xstart, Xend, Ystart, Yend)"
+        print("Coords argument requires 4 real number such as (Xstart, Xend, Ystart, Yend)")
         return
     Xsize=MatSize[0]
     Ysize=MatSize[1]

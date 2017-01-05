@@ -63,7 +63,7 @@ def detrend(M):
     PlaneFit= -(norm[0]*X+ norm[1]*Y + d)/norm[2]
     D=M-PlaneFit
     coeff=np.array([norm,d])
-    print 'Matrix detrended!'
+    print ('Matrix detrended!')
     return D, coeff
 
 #======================= Test Zone ================

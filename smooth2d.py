@@ -11,7 +11,7 @@ def kernel_square(nPix):
     :param nPix: size of the kernel in pixel
     :return: kernel matrix
     """
-    print "Averaging kernel of " + str(nPix) + " by " + str(nPix)
+    print("Averaging kernel of " + str(nPix) + " by " + str(nPix))
     kernel = np.empty([nPix, nPix])
     kernel.fill(1)
     kernel /= kernel.sum()   # kernel should sum to 1!  :)
@@ -26,7 +26,7 @@ def smooth(mat, kernel):
     :return: smoothed array
     """
     r = cv2.filter2D(mat, -1, kernel)
-    print "Smoothing done ..."
+    print("Smoothing done ...")
     return r
 
 def crop_frame(mat, nPix):
@@ -38,7 +38,7 @@ def crop_frame(mat, nPix):
     """
     matShape = mat.shape()
     matout = mat[(0+nPix):(matShape[0]-nPix), (0+nPix):(matShape[1]-nPix)]
-    return matout
+    return(matout)
 
 def compare_smooth(mat, nCompare = None, kPixMax = None):
     """

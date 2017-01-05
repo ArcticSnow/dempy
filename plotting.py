@@ -13,8 +13,8 @@ def thinningCheckup(fvec,DispOption=None):
     Applies default thinning if the input vectors are too large
     '''
     if DispOption!=None:
-        print "There are " + str(fvec.size) + " data points \n"
-        print "You should use a thinning of " + str(int(fvec.size/50000))
+        print("There are " + str(fvec.size) + " data points \n")
+        print("You should use a thinning of " + str(int(fvec.size/50000)))
     thinning = int(fvec.size/10000)
     return thinning
 

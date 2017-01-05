@@ -10,7 +10,7 @@ def timing(f):
         time1 = time.time()
         ret = f(*args)
         time2 = time.time()
-        print '%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0)
+        print('%s function took %0.3f ms' % (f.func_name, (time2-time1)*1000.0))
         return ret
     return wrap
 
@@ -21,10 +21,10 @@ def loadLAS2XYZ(filepath):
     :param filepath: filepath of the LAS file
     :return: xyz array containing coordinate of the points
     '''
-    print 'Start loading...'
+    print('Start loading...')
     inFile = File(filepath, mode='r')
     coords = np.vstack((inFile.x, inFile.y, inFile.z)).transpose()
-    print 'Data loaded'
+    print('Data loaded')
     return coords
 
 def LAS2txt(filepath,newfile):
@@ -39,24 +39,24 @@ def LAS2txt(filepath,newfile):
     if newfile[-4] != '.txt':
         newfile = newfile + '.txt'
     np.savetxt(newfile,coords)
-    print 'File saved: ' + newfile
+    print('File saved: ' + newfile)
 
 def xyz_subsample(xyz, length_out):
     ind = np.random.randint(0,xyz.shape[0],length_out)
     xyz_new = xyz[ind,:]
-    print 'xyz subsampled!'
+    print('xyz subsampled!')
     return xyz_new
 
 def xyz_stat(xyz):
-    print 'Shape of array: ' + str(xyz.shape)
-    print 'Min of xyz: '
-    print np.min(xyz, axis=0)
-    print 'Max of xyz: '
-    print np.max(xyz, axis=0)
-    print 'Mean of xyz: '
-    print np.mean(xyz, axis=0)
-    print 'Extent'
-    print np.max(xyz, axis=0)-np.min(xyz, axis=0)
+    print('Shape of array: ' + str(xyz.shape))
+    print('Min of xyz: ')
+    print(np.min(xyz, axis=0))
+    print('Max of xyz: ')
+    print(np.max(xyz, axis=0))
+    print('Mean of xyz: ')
+    print(np.mean(xyz, axis=0))
+    print('Extent')
+    print(np.max(xyz, axis=0)-np.min(xyz, axis=0))
 
 def trans(xyz,trans_vec):
     xyz[:,0] = xyz[:,0] - trans_vec[0]
@@ -119,7 +119,7 @@ def get_slice(xyz, thick, dir=0, center_coord=None):
     '''
     if center_coord is None:
         center_coord = [np.mean(xyz[:,0]),np.mean(xyz[:,1])]
-        print center_coord
+        print(center_coord)
     if dir % 180 != 0:
         xyz = rotate_cloud(xyz, (dir*math.pi/180), center_coord= center_coord)
     myslice = xyz[xyz[:,0]>=-(thick/2)]
@@ -140,7 +140,7 @@ def get_slice_df(df_xyz, thick, dir=0, center_coord=None):
     df_xyz=None
     if center_coord is None:
         center_coord = [df['x'].mean(),df['y'].mean()]
-        print center_coord
+        print(center_coord)
     if dir % 180 != 0:
         xyz = rotate_cloud(np.array(df[['x','y','z']]), (dir*math.pi/180), center_coord = center_coord)
         df[['x','y']] = xyz[:,[0,1]]
@@ -151,14 +151,14 @@ def get_slice_df(df_xyz, thick, dir=0, center_coord=None):
         myslice = myslice[df.x <= (center_coord[0] + thick / 2)]
         myslice['x'] = myslice['x'] - center_coord[0]
         myslice['y'] = myslice['y'] - center_coord[1]
-    print 'Data Sliced'
+    print('Data Sliced')
     return myslice
 
 def center_pc_coord_df(df_xyz, center_coord=None):
     if center_coord is None:
         center_coord = [(df_xyz['x'].max()-df_xyz['x'].min())/2 + df_xyz['x'].min(),
                         (df_xyz['y'].max()-df_xyz['y'].min())/2 +df_xyz['y'].min()]
-        print center_coord
+        print(center_coord)
     df_xyz['x'] = df_xyz['x'] - center_coord[0]
     df_xyz['y'] = df_xyz['y'] - center_coord[1]
     return df_xyz
@@ -174,11 +174,11 @@ def translate_coords(coords, xyz_trans = None ,ask = True):
     if xyz_trans is None:
         xyz_trans = [coords[:,0].min(), coords[:,1].min(), coords[:,2].min()]
     if ask is True:
-        print 'Default translation:'
-        print str(xyz_trans) + '\n'
+        print('Default translation:')
+        print(str(xyz_trans) + '\n')
         res = input('Do you want to translate? 0/1')
         if res is 0:
-            print 'No Translation applied'
+            print('No Translation applied')
             return None
         if res is 1:
             return trans(coords, xyz_trans)
@@ -207,12 +207,12 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     x_cuts = pd.cut(df.X,bins_x, labels=False)
     bins_y = np.linspace(ystart,yend,ny)
     y_cuts = pd.cut(df.Y,bins_y, labels=False)
-    print 'Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix'
+    print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix')
     dx = (xend - xstart)/nx
     dy = (yend - ystart)/ny
     print 'dx = ' + str(dx) + ' ; dy = ' + str (dy)
     grouped = df.groupby([x_cuts,y_cuts])
-    print 'Data grouped, \nReady to go!!'
+    print('Data grouped, \nReady to go!!')
     return grouped
 
 @timing
@@ -228,11 +228,11 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     y_cuts = pd.cut(df.Y,bins_y, labels=False)
     bins_z = np.linspace(zstart, zend, nz)
     z_cuts = pd.cut(df.Z,bins_z, labels=False)
-    print 'Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' by ' + str(bins_z.__len__()) + ' matrix'
+    print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' by ' + str)(bins_z.__len__()) + ' matrix'
     dx = (xend-xstart)/nx
     dy = (yend - ystart)/ny
     dz = (zend - zstart)/nz
-    print 'dx = ' + str(dx) + ' ; dy = ' + str (dy) + ' ; dz = ' + str (dz)
+    print('dx = ' + str(dx) + ' ; dy = ' + str (dy) + ' ; dz = ' + str (dz))
 
     # create a 3D array
     my3d = np.zeros((len(x_cuts),len(y_cuts),len(z_cuts))) * np.nan
@@ -248,7 +248,7 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
         
         # add 2d array to 3d array
         my3d[:,:,i] = my2d
-    print 'Data grouped, \nReady to go!!'
+    print('Data grouped, \nReady to go!!')
     return my3d #3D array
 
 
@@ -272,5 +272,5 @@ def voxelPCL(mypcl,dx,dy,dz):
     vox = p.make_voxel_grid_filter()
     vox.set_leaf_size(dx,dy,dz)
     c = vox.filter()
-    print 'voxel ready'
+    print('voxel ready')
     return c

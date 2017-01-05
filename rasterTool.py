@@ -70,6 +70,21 @@ def raster2array(myRaster):
     myRaster=None
     return data, dx, dy, transform
 
+
+def makeGeotransform(Xmin, dx, , Ymax, dy):
+    '''
+
+    :param Xmin: x-coordinate of the upper left corner
+    :param dx: pixel resolution x-direction
+    :param Ymax: y-coordiante of the upper left corner
+    :param dy: pixel resolution y-direction
+    :return: a geotranform object ready to use in GDAL functions
+
+    Note: more info http://www.perrygeo.com/python-affine-transforms.html
+    '''
+    return [Xmin, dx, 0, Ymax, dy, 0]
+
+
 # function to save results as a geotiff raster file
 def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue,OutPath=None):
     '''
