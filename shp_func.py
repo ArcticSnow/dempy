@@ -3,6 +3,8 @@ __author__ = 'svfilhol'
 import pandas as pd
 import scipy.spatial as sp
 import pyproj as Proj
+import geopandas
+from shapely.geometry import Point
 
 # Function open shapefile
 def loadSHP(filename):

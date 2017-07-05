@@ -7,13 +7,11 @@ Created on Thu May 15 19:53:00 2014
 
 import gdal, sys, osr, os, time
 from gdalconst import *
-from tkinter import *
-import tkinter.filedialog as tkFileDialog
 import matplotlib.pyplot as plt
 import numpy as np
 
 # function to load a raster file
-def openRaster(InPath=None):
+def openRaster(InPath):
     '''
     openRaster()   Load a raster file into Python console using gdal libraries.\n
     **myRaster, InPath = openRaster("filepath")**\n
@@ -29,17 +27,6 @@ def openRaster(InPath=None):
     **myRaster** :      Raster class object (gdal object) \n
     **InPath** : string indicating the file path including the filename
     '''
-    if InPath == None:
-        root = Tk()
-        root.withdraw()
-        InPath = tkFileDialog.askopenfilename()
-        time.sleep(.9)
-        root.destroy()
-        root.quit()
-    if InPath is None:
-        print('Could not open image')
-        sys.exit(1)
-    print(InPath)
     myRaster=gdal.Open(InPath)
     return myRaster
     
@@ -86,7 +73,7 @@ def makeGeotransform(Xmin, dx, Ymax, dy):
 
 
 # function to save results as a geotiff raster file
-def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutPath=None, epsg=32632):
+def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9999, epsg=32632):
     '''
     Save to a GeoTiff file the array\n
     **saveArray2rasterTif(filename, transform, myArray, OutPath)**
@@ -101,14 +88,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutP
     :param epsg: projecton epsg code. default is 32632 for finse UTM 32N. 32606 for 6N (northern Alaska)
     :return:
     '''
-    
-    if OutPath==None:
-        root = Tk()
-        root.withdraw()
-        OutPath = tkFileDialog.askdirectory(parent=root)
-        time.sleep(0.9)
-        root.destroy()
-        root.quit()
+
     os.chdir(OutPath)
     cols = array.shape[1]
     rows = array.shape[0]
@@ -123,6 +103,73 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, _FillValue=-9999, OutP
     outRasterSRS.ImportFromEPSG(epsg)
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
+
+def fill_nodata(inPath, fileIn, filledPath, fileOut=None):
+    '''
+    Function to run the Fill_nodata algorithm of GDAL.
+
+    WARNING: This function uses os.system that many do not recomend because of security reason. Anything entered within os.system() will be run into the comand line.
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!USE AT YOUR OWN RISK!!!!!!!!!!!!!!!!!!!
+
+    :param inPath:
+    :param fileIn:
+    :param filledPath:
+    :param fileOut:
+    :return:
+    '''
+    if fileOut is None:
+        fileOut = fileIn[:-4] + '_f.tif'
+
+    os.system('gdal_fillnodata.py -md 5 -nomask -of GTiff ' + inPath + fileIn + ' ' + filledPath + fileOut)
+
+
+
+def pad_nan_raster(myraster, newXmin, newYmax, newNx, newNy, fname, OutPath, _fill_na=-9999, epsg=32632):
+    '''
+    Function to pad raster with NAN
+    :param myraster:
+    :param newXmin:
+    :param newYmax:
+    :param newNx:
+    :param newNy:
+    :param fname:
+    :param OutPath:
+    :param _fill_na:
+    :param epsg:
+    :return:
+    '''
+    geoT = raster2array(myraster)[3]
+    myarray = raster2array(myraster)[0]
+    print '==================='
+    print geoT
+    print myarray.shape
+
+    geoT = np.round(np.array(geoT), 1)
+
+    if geoT[0] > newXmin:
+        myarray = np.concatenate((np.full([myarray.shape[0], np.int(np.round((np.abs(newXmin - geoT[0])) / geoT[1]))], np.nan), myarray), axis=1)
+        geoT[0] = newXmin
+
+    if geoT[0] == newXmin:
+        if myarray.shape[1] < newNx:
+            myarray = np.concatenate((myarray, np.full([myarray.shape[0], newNx - myarray.shape[1]], np.nan)), axis=1)
+
+    if geoT[3] < newYmax:
+        myarray = np.concatenate(
+            (np.full([np.int(np.round((newYmax - geoT[3]) / geoT[1])), myarray.shape[1]], np.nan), myarray), axis=0)
+        geoT[3] = newYmax
+
+    if geoT[3] == newYmax:
+        if myarray.shape[1] < newNy:
+            myarray = np.concatenate((myarray, np.full([newNy - myarray.shape[0], myarray.shape[1]], np.nan)), axis=0)
+
+    print myarray.shape
+
+    saveArray2rasterTif(fname, myarray, makeGeotransform(geoT[0], geoT[1], geoT[3], -geoT[5]), OutPath, _FillValue=_fill_na, epsg=epsg)
+
+
+
 
 def plot_raster(raster, band):
     mat = raster.GetRasterBand(band).ReadAsArray()

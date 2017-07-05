@@ -29,6 +29,28 @@ def smooth(mat, kernel):
     print("Smoothing done ...")
     return r
 
+def smooth_nan(myarray, kernel):
+    '''
+    Function to smooth 2D array with NAN values.
+
+    technique from    http://stackoverflow.com/questions/18697532/gaussian-filtering-a-image-with-nan-in-python
+
+    :param myarray: a 2D numpy array
+    :param kernel: a kernel object from kernel_square() or equivalent
+    :return: a 2D numpy array
+    '''
+    #
+    myarray[myarray == -9999] = np.nan
+    V = myarray.copy()
+    V[myarray != myarray] = 0
+    VV = smooth(V, kernel)
+    W = 0 * myarray.copy() + 1
+    W[myarray != myarray] = 0
+    WW = smooth(W, kernel)
+    Z = VV / WW
+    return Z
+
+
 def crop_frame(mat, nPix):
     """
     Function to crop a 2D array by a frame all around the array by nPix pixels

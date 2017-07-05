@@ -2,7 +2,6 @@ from __future__ import division
 from laspy.file import File
 import numpy as np
 import pandas as pd
-import pcl
 import time, math
 
 def timing(f):
@@ -27,6 +26,59 @@ def loadLAS2XYZ(filepath):
     print('Data loaded')
     return coords
 
+
+@timing
+def loadLAS2XYZAIRN(filepath):
+    '''
+    Function to load in console the pointcloud of a LAS file with points attributes
+    :param filepath: filepath of the LAS file
+    :return: xyz array containing coordinate of the points
+    '''
+    print('Start loading...')
+    inFile = File(filepath, mode='r')
+    coords = np.vstack((inFile.x, inFile.y, inFile.z, inFile.amplitude, inFile.Intensity, inFile.reflectance, inFile.num_returns)).transpose()
+    print('Data loaded')
+    return coords
+
+def xyz2binarray(xyz, xstart, xend, ystart, yend, nx=1000, ny=1000, method='min'):
+    '''
+    Function to extract projected grid on the XY-plane of point cloud statistics
+
+    :param xyz: a 3 column vector containing the point location in cartesian coordinate system
+    :param xstart: x-minimum of the grid
+    :param xend: x-maximum of the grid
+    :param ystart: y-minimm of the grid
+    :param yend: y-maximum of the grid
+    :param nx: number of grid cell in the x directions
+    :param ny: number of grid cell in the y directions
+    :param method: statistics to extract from each gridcell
+    :return: returns a 2D array, xmin, and ymax
+
+    TO IMPLEMENT:
+        - being able to choose to input dx dy instead of nx ny
+    '''
+    binned, bins_x, bins_y = binData2D(xyz, xstart, xend, ystart, yend, nx, ny)
+
+    if method == 'min':
+        ret = binned.Z.min().unstack().T  #.iloc[::-1]
+    elif method == 'max':
+        ret = binned.Z.max().unstack().T #.iloc[::-1]
+    elif method == 'mean':
+        ret = binned.Z.mean().unstack().T #.iloc[::-1]
+    elif method == 'median':
+        ret = binned.Z.median().unstack().T #.iloc[::-1]
+    elif method == 'count':
+        ret = binned.Z.count().unstack().T  #.iloc[::-1]
+
+    xmin = bins_x[ret.columns.min().astype(int)]
+    ymax = bins_y[ret.index.get_values().max().astype(int)]
+
+    newIndy = np.arange(ret.index.get_values().min(), ret.index.get_values().max())
+    newIndx = np.arange(ret.columns.min(), ret.columns.max())
+    a = ret.reindex(newIndy, newIndx)
+
+    return a[::-1], xmin, ymax
+
 def LAS2txt(filepath,newfile):
     '''
     Function to convert a pointcloud save in LAS format into a .txt format
@@ -42,6 +94,12 @@ def LAS2txt(filepath,newfile):
     print('File saved: ' + newfile)
 
 def xyz_subsample(xyz, length_out):
+    '''
+    Function to subsample a 3 columm matrix.
+    :param xyz: 3 column matrix
+    :param length_out: number of sample to output
+    :return: a 3 column matrix
+    '''
     ind = np.random.randint(0,xyz.shape[0],length_out)
     xyz_new = xyz[ind,:]
     print('xyz subsampled!')
@@ -59,12 +117,48 @@ def xyz_stat(xyz):
     print(np.max(xyz, axis=0)-np.min(xyz, axis=0))
 
 def trans(xyz,trans_vec):
+    '''
+    Function to translate an xyz 3 column matrix
+    :param xyz: a 3 column matrix
+    :param trans_vec: a translation vector of length 3
+    :return: a 3 column matrix translated
+    '''
+
     xyz[:,0] = xyz[:,0] - trans_vec[0]
     xyz[:,1] = xyz[:,1] - trans_vec[1]
     xyz[:,2] = xyz[:,2] - trans_vec[2]
     return xyz
 
+def translate_coords(coords, xyz_trans = None ,ask = True):
+    '''
+    Function to translate a point cloud
+    :param coords: an xyz array
+    :param xyz_trans: vector of translation in [x,y,z]
+    :param ask: if True (default) brings an interactive console for approving the translation
+    :return: translated xyz array
+    '''
+    if xyz_trans is None:
+        xyz_trans = [coords[:,0].min(), coords[:,1].min(), coords[:,2].min()]
+    if ask is True:
+        print('Default translation:')
+        print(str(xyz_trans) + '\n')
+        res = input('Do you want to translate? 0/1')
+        if res is 0:
+            print('No Translation applied')
+            return None
+        if res is 1:
+            return trans(coords, xyz_trans)
+    if ask is not True:
+        return trans(coords, xyz_trans)
+
 def truncate(xyz, Xextent, Yextent):
+    '''
+    Function to truncate a point cloud with a rectangular shape
+    :param xyz: a 3 column matrix containing the points coordinate
+    :param Xextent: a vector of Xmin and Xmax (e.g. [Xmin,Xmax])
+    :param Yextent: a vector of Ymin and Ymax (e.g. [Ymin, Ymax])
+    :return: a 3 colum matrix containing the points coordiante within the specified rectangle
+    '''
     xcut = xyz[xyz[:,0]>=Xextent[0]]
     xcut1 = xcut[xcut[:,0]<Xextent[1]]
     ycut = xcut1[xcut1[:,1]>=Yextent[0]]
@@ -73,8 +167,11 @@ def truncate(xyz, Xextent, Yextent):
 
 def cart2cyl(xyz, xy_axis=None):
     '''
-    function to convert cartesina coordinates to cylindrical
-    xy_axis is an array of x and y coordinate for the center of the new cylindrical coordinate
+        function to convert cartesian coordinates to cylindrical
+
+    :param xyz: a 3-column matrix containing the points coordinates expressed in a cartesian system
+    :param xy_axis: an array of x and y coordinate for the center of the new cylindrical coordinate
+    :return: a 3 colum matrix with the point coordinates are expressed in a cylindrical coordinate system
     '''
     if xy_axis is not None:
         xyz[:,0] =  xyz[:,0] - xy_axis[0]
@@ -87,6 +184,8 @@ def cart2cyl(xyz, xy_axis=None):
 def cyl2cart(rpz):
     '''
     convert cylindrical coordinate to cartesian
+    :param rpz: a 3-column matrix containing the points coordinates expressed in a cylindrical system
+    :return: a 3-column matrix containing the points coordinates expressed in a cartesian system
     '''
     x = rpz[:,0] * np.cos(rpz[:,1])
     y = rpz[:,0] * np.sin(rpz[:,1])
@@ -163,27 +262,6 @@ def center_pc_coord_df(df_xyz, center_coord=None):
     df_xyz['y'] = df_xyz['y'] - center_coord[1]
     return df_xyz
 
-def translate_coords(coords, xyz_trans = None ,ask = True):
-    '''
-    Function to translate a point cloud
-    :param coords: an xyz array
-    :param xyz_trans: vector of translation in [x,y,z]
-    :param ask: if True (default) brings an interactive console for approving the translation
-    :return: translated xyz array
-    '''
-    if xyz_trans is None:
-        xyz_trans = [coords[:,0].min(), coords[:,1].min(), coords[:,2].min()]
-    if ask is True:
-        print('Default translation:')
-        print(str(xyz_trans) + '\n')
-        res = input('Do you want to translate? 0/1')
-        if res is 0:
-            print('No Translation applied')
-            return None
-        if res is 1:
-            return trans(coords, xyz_trans)
-    if ask is not True:
-        return trans(coords, xyz_trans)
 
 @timing
 def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
@@ -203,9 +281,9 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     y = myXYZ[:,1].ravel()
     z = myXYZ[:,2].ravel()
     df = pd.DataFrame({'X' : x , 'Y' : y , 'Z' : z})
-    bins_x = np.linspace(xstart,xend,nx)
+    bins_x = np.linspace(xstart, xend, nx)
     x_cuts = pd.cut(df.X,bins_x, labels=False)
-    bins_y = np.linspace(ystart,yend,ny)
+    bins_y = np.linspace(ystart,yend, ny)
     y_cuts = pd.cut(df.Y,bins_y, labels=False)
     print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix')
     dx = (xend - xstart)/nx
@@ -213,8 +291,12 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     print 'dx = ' + str(dx) + ' ; dy = ' + str (dy)
     grouped = df.groupby([x_cuts,y_cuts])
     print('Data grouped, \nReady to go!!')
-    return grouped
+    return grouped, bins_x, bins_y
 
+#=====================================================================
+#=====================================================================
+#       Function in PROGRESS !!!  Use at your own risk
+#===================================================================
 @timing
 def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     # not ready !!!!
@@ -251,26 +333,8 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     print('Data grouped, \nReady to go!!')
     return my3d #3D array
 
+def cart2sphere():
+    # write function to convert xyz point coordinates to spehrical coordiantes
 
-def voxel_df(df,leaf):
-    '''
-    Function to voxelize point cloud in a data frame format
-    Code based on
-    :param df: data frame containing the point cloud
-    :param leaf: size of the voxel
-    :return:
-    '''
-
-
-def voxelPCL(mypcl,dx,dy,dz):
-    # function to voxelize a point cloud using Point Cloud Library
-    # Runs, but output is meaningless.
-    p = pcl.PointCloud()
-    if mypcl.dtype != 'float32':
-        mypcl.dtype=np.float32
-    p.from_array(mypcl)
-    vox = p.make_voxel_grid_filter()
-    vox.set_leaf_size(dx,dy,dz)
-    c = vox.filter()
-    print('voxel ready')
-    return c
+def sphere2cart():
+    # write the reverse operation from cart2sphere()
