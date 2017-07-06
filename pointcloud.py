@@ -28,7 +28,7 @@ def loadLAS2XYZ(filepath):
 
 
 @timing
-def loadLAS2XYZAIRN(filepath):
+def loadLAS2XYZ(filepath):
     '''
     Function to load in console the pointcloud of a LAS file with points attributes
     :param filepath: filepath of the LAS file
@@ -225,7 +225,6 @@ def get_slice(xyz, thick, dir=0, center_coord=None):
     myslice = myslice[myslice[:,0]<=(thick/2)]
     return myslice
 
-
 def get_slice_df(df_xyz, thick, dir=0, center_coord=None):
     '''
     Function to extract a slice of points from a dataframe
@@ -261,7 +260,6 @@ def center_pc_coord_df(df_xyz, center_coord=None):
     df_xyz['x'] = df_xyz['x'] - center_coord[0]
     df_xyz['y'] = df_xyz['y'] - center_coord[1]
     return df_xyz
-
 
 @timing
 def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
@@ -333,8 +331,8 @@ def binData3D(xyz,xstart, xend, ystart, yend, zstart, zend,nx,ny,nz):
     print('Data grouped, \nReady to go!!')
     return my3d #3D array
 
-def cart2sphere():
-    # write function to convert xyz point coordinates to spehrical coordiantes
-
-def sphere2cart():
-    # write the reverse operation from cart2sphere()
+# def cart2sphere():
+#     # write function to convert xyz point coordinates to spehrical coordiantes
+#
+# def sphere2cart():
+#     # write the reverse operation from cart2sphere()

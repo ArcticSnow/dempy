@@ -13,7 +13,6 @@ Requires to install third party libraries for using certain function:
     pypismtools
     openCV
     gdal
-    pcl and pcl-python bindings
     pyproj
     numpy
     matplotlib
