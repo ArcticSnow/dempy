@@ -9,8 +9,7 @@ Python Module For DEM manipulation
 
 
 Requires to install third party libraries for using certain function:
-    pyfftw
-    pypismtools
+
     openCV
     gdal
     pyproj
@@ -20,3 +19,6 @@ Requires to install third party libraries for using certain function:
     cv2
     tkinter
     laspy
+
+    pyfftw
+    pypismtools

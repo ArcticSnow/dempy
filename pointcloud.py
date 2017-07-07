@@ -40,6 +40,7 @@ def loadLAS2XYZ(filepath):
     print('Data loaded')
     return coords
 
+
 def xyz2binarray(xyz, xstart, xend, ystart, yend, nx=1000, ny=1000, method='min'):
     '''
     Function to extract projected grid on the XY-plane of point cloud statistics
@@ -57,27 +58,29 @@ def xyz2binarray(xyz, xstart, xend, ystart, yend, nx=1000, ny=1000, method='min'
     TO IMPLEMENT:
         - being able to choose to input dx dy instead of nx ny
     '''
-    binned, bins_x, bins_y = binData2D(xyz, xstart, xend, ystart, yend, nx, ny)
+    binned, bins_x, bins_y, bin_xmin, bin_ymin = binData2D(xyz, xstart, xend, ystart, yend, nx, ny)
 
     if method == 'min':
-        ret = binned.Z.min().unstack().T  #.iloc[::-1]
+        ret = binned.Z.min().unstack().T  # .iloc[::-1]
     elif method == 'max':
-        ret = binned.Z.max().unstack().T #.iloc[::-1]
+        ret = binned.Z.max().unstack().T  # .iloc[::-1]
     elif method == 'mean':
-        ret = binned.Z.mean().unstack().T #.iloc[::-1]
+        ret = binned.Z.mean().unstack().T  # .iloc[::-1]
     elif method == 'median':
-        ret = binned.Z.median().unstack().T #.iloc[::-1]
+        ret = binned.Z.median().unstack().T  # .iloc[::-1]
     elif method == 'count':
-        ret = binned.Z.count().unstack().T  #.iloc[::-1]
+        ret = binned.Z.count().unstack().T  # .iloc[::-1]
 
     xmin = bins_x[ret.columns.min().astype(int)]
     ymax = bins_y[ret.index.get_values().max().astype(int)]
 
-    newIndy = np.arange(ret.index.get_values().min(), ret.index.get_values().max())
-    newIndx = np.arange(ret.columns.min(), ret.columns.max())
+    newIndy = np.arange(ret.index.get_values().min(), ret.index.get_values().max() + 1)
+    newIndx = np.arange(ret.columns.min(), ret.columns.max() + 1)
     a = ret.reindex(newIndy, newIndx)
+    mat = np.zeros((ny, nx)) * np.nan
+    mat[bin_ymin:bin_ymin + a.shape[0], bin_xmin:bin_xmin + a.shape[1]] = a
 
-    return a[::-1], xmin, ymax
+    return mat[::-1], xmin, ymax
 
 def LAS2txt(filepath,newfile):
     '''
@@ -274,22 +277,23 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     :param ny: number of cells along hte y-axis
     :return: a group object (pandas library) with all points classified into bins
     '''
-    # note, the division requires:     from __future__ import division
+    # note, the division requires:     from _future_ import division
     x = myXYZ[:,0].ravel()
     y = myXYZ[:,1].ravel()
     z = myXYZ[:,2].ravel()
     df = pd.DataFrame({'X' : x , 'Y' : y , 'Z' : z})
-    bins_x = np.linspace(xstart, xend, nx)
+    bins_x = np.linspace(xstart, xend, nx+1)
     x_cuts = pd.cut(df.X,bins_x, labels=False)
-    bins_y = np.linspace(ystart,yend, ny)
+    bins_y = np.linspace(ystart,yend, ny+1)
     y_cuts = pd.cut(df.Y,bins_y, labels=False)
-    print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix')
+    bin_xmin, bin_ymin = x_cuts.min(), y_cuts.min()
+    print('Data cut in a ' + str(bins_x.__len_()) + ' by ' + str(bins_y.__len_()) + ' matrix')
     dx = (xend - xstart)/nx
     dy = (yend - ystart)/ny
     print 'dx = ' + str(dx) + ' ; dy = ' + str (dy)
     grouped = df.groupby([x_cuts,y_cuts])
     print('Data grouped, \nReady to go!!')
-    return grouped, bins_x, bins_y
+    return grouped, bins_x, bins_y, int(bin_xmin), int(bin_ymin)
 
 #=====================================================================
 #=====================================================================
