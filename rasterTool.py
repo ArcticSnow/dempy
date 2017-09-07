@@ -9,6 +9,7 @@ import gdal, sys, osr, os, time
 from gdalconst import *
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # function to load a raster file
 def openRaster(InPath):
@@ -89,6 +90,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     :return:
     '''
 
+    cwd = os.getcwd()
     os.chdir(OutPath)
     cols = array.shape[1]
     rows = array.shape[0]
@@ -103,6 +105,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     outRasterSRS.ImportFromEPSG(epsg)
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
+    os.chdir(cwd)
 
 def fill_nodata(inPath, fileIn, filledPath, fileOut=None):
     '''
@@ -187,6 +190,55 @@ def get_pt_value_rasterfile(rasterfile, Xs, Ys):
   x = (Xs - gt[0])/gt[1]
   y = (Ys - gt[3])/gt[5]
   return data[y.astype('int'), x.astype('int')]
+
+
+def get_pt_value_from_df(rasterMat, geoTransform, df_XsYs, colName='sample'):
+    '''
+
+    :param rastermat:
+    :param geoTransform:
+    :param df_XsYs:
+    :return:
+    '''
+    df_XsYs = df_XsYs.drop(df_XsYs[(((df_XsYs["X"]-geoTransform[0])/geoTransform[1])<=0)|(((df_XsYs["X"]-geoTransform[0])/geoTransform[1])>=len(rasterMat[0]))].index)
+    df_XsYs = df_XsYs.drop(df_XsYs[(((df_XsYs["Y"]-geoTransform[2])/geoTransform[3])<=0)|(((df_XsYs["Y"]-geoTransform[2])/geoTransform[3])>=len(rasterMat))].index)
+    x = (df_XsYs["X"]-geoTransform[0])/geoTransform[1]
+    y = (df_XsYs["Y"]-geoTransform[2])/geoTransform[3]
+
+
+    sample=pd.DataFrame(rasterMat[y.astype('int'), x.astype('int')], columns=["slope"])
+    df_sampled = pd.concat([x,y,sample],axis=1)
+
+    df[colName]
+    df_sampled.columns = ['Xs', 'Ys', 'sample']
+
+    return df_sampled
+
+
+
+def get_pt_value_from_df_guillaume(rastermat, gt, df):
+    '''
+
+    :param rastermat:
+    :param gt:
+    :param df:
+    :return:
+    '''
+    data = rastermat
+    df = df.drop(df[(((df["X"]-gt[0])/gt[1])<=0)|(((df["X"]-gt[0])/gt[1])>=len(data[0]))].index)
+    df = df.drop(df[(((df["Y"]-gt[2])/gt[3])<=0)|(((df["Y"]-gt[2])/gt[3])>=len(data))].index)
+    x = (df["X"]-gt[0])/gt[1]
+    y = (df["Y"]-gt[2])/gt[3]
+    rast_min=pd.DataFrame(data[:,:,0][y.astype('int'), x.astype('int')], columns=["Z_min"])
+    rast_max=pd.DataFrame(data[:,:,1][y.astype('int'), x.astype('int')], columns=["Z_max"])
+    rast_mean=pd.DataFrame(data[:,:,2][y.astype('int'), x.astype('int')], columns=["Z_mean"])
+    rast_med=pd.DataFrame(data[:,:,3][y.astype('int'), x.astype('int')], columns=["Z_med"])
+    rast_std=pd.DataFrame(data[:,:,4][y.astype('int'), x.astype('int')], columns=["std"])
+    rast_count=pd.DataFrame(data[:,:,5][y.astype('int'), x.astype('int')], columns=["count"])
+    rast_slope=pd.DataFrame(data[:,:,6][y.astype('int'), x.astype('int')], columns=["slope"])
+    return df,pd.concat([rast_min,rast_max,rast_mean,rast_med,rast_std,rast_count,rast_slope],axis=1)
+
+
 
 def get_pt_value_array(myarray, geotransform, Xs, Ys):
   x = (Xs - geotransform[0])/geotransform[1]

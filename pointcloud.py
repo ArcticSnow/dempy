@@ -287,7 +287,7 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     bins_y = np.linspace(ystart,yend, ny+1)
     y_cuts = pd.cut(df.Y,bins_y, labels=False)
     bin_xmin, bin_ymin = x_cuts.min(), y_cuts.min()
-    print('Data cut in a ' + str(bins_x.__len_()) + ' by ' + str(bins_y.__len_()) + ' matrix')
+    print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix')
     dx = (xend - xstart)/nx
     dy = (yend - ystart)/ny
     print 'dx = ' + str(dx) + ' ; dy = ' + str (dy)
