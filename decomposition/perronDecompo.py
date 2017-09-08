@@ -48,16 +48,11 @@ class perron_fftDEM(object):
         # calculate the 2D FFT
         if openCV:
             fft = cv2.dft(np.float32(mat), flags=cv2.DFT_COMPLEX_OUTPUT)
-            print fft.shape
-            print fft[1,1,:]
             fshift = np.fft.fftshift(fft)
             DFTperiodogram = np.copy(cv2.magnitude(fshift[:,:,0],fshift[:,:,1])**2)
 
         else:
             fft = np.fft.fft2(mat)
-            print fft.shape
-            print fft[1,1]
-
             fshift = np.fft.fftshift(fft)
 
             # Making sure the fft of the dem is detrented as the padding might add a bias from the previously detrended dem
@@ -132,8 +127,6 @@ class perron_fftDEM(object):
         spect1D_bin['power_mean'] = binned.power.mean().as_matrix()
         spect1D_bin['power_std'] = binned.power.std().as_matrix()
 
-        print spect1D_bin
-
         return spect1D_bin
 
     def plot_1D_spec(self,x, y, nbins=10, errorbar=False):
@@ -162,7 +155,7 @@ class perron_fftDEM(object):
     def normalized_spect(self, H, Zrange=1, nSynth=20, demVar=1):
         for i in range(1, nSynth+1):
             print 'Synthetic surface # ' + str(i) + ' of ' + str(nSynth)
-            synthDEM = ds.diamondSquare(self.ny, self.nx, Zrange, H)
+            synthDEM = ds.diamondSquare(self.nx, self.ny, Zrange, H)
             synthDEM = synthDEM * np.sqrt(demVar)/np.std(synthDEM)
 
             Pvec, fvec, freqmat, Pmat = self.fftmat(synthDEM, dx=self.dx, dy=self.dy, pad_window=True)
@@ -188,20 +181,27 @@ class perron_fftDEM(object):
         self.DFTperiodogram_norm = self.DFTperiodogram / Pm
         self.Power_vec_norm = self.Power_vec / P
 
-        print np.nanmax(self.DFTperiodogram_norm)
         # estimate misfit between synthetic dems and original one. This RMSE should be minize to by tuning H
+        bin_spec = self.bin_scatter(self.Freq_vec, self.Power_vec, nbins=15)
+        bin_spec_normed = self.bin_scatter(self.Freq_vec, P, nbins=15)
+
+        self.synth_rmse = np.sqrt(np.mean((bin_spec.power_mean - bin_spec_normed.power_mean)**2))
+        print self.synth_rmse
 
 if __name__ == '__main__':
 
     # script to demonstrate how to use perron_fftDEM() based on a random surface
-    t = ds.diamondSquare(100,100,20,.3)
+    t = ds.diamondSquare(100, 50, 20, .3)
     p = perron_fftDEM()
     p.dem = t
     p.dx = 1
     p.dy = 1
     p.fftdem()
-    p.normalized_spect(H=0.7, demVar=p.Power_vec.sum())
 
+    # To generate synthetic spectrum, use H that minimizes the RMSE (could be done incrementaly)
+    p.normalized_spect(H=0.3, demVar=p.Power_vec.sum())
+
+    # To look at confidence level of for the normalized periodogram, use a chi-square distribution
     plt.imshow(p.DFTperiodogram_norm>chi2.pdf(.90, 2))
 
     p.plot_1D_specDEM(30)
