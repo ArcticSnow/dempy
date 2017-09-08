@@ -7,6 +7,10 @@ import decomposition.diamondSquare as ds
 from scipy.stats import chi2
 
 class perron_fftDEM(object):
+    '''
+    Class to perform analysis such as the one in Perron et al. 2008
+
+    '''
     def __init__(self):
         self.dem = None
         self.dx = None
@@ -21,8 +25,23 @@ class perron_fftDEM(object):
         self.DFTperiodogram_norm = None
         self.Power_vec_norm = None
 
-    def fftmat(self, mat,dx=1,dy=1, pad=False, pad_window=True, openCV=False, ret=False):
+    def fftmat(self, mat,dx=1,dy=1, pad=False, pad_window=True, openCV=True):
+        '''
+        Function to derive Fourier transform. Returns 2D and 1D periodogram
+        :param mat:         input 2D matirx
+        :param dx:          pixel resolution of the matrix in the x-dir
+        :param dy:          pixel resolution of the matrix in the y-dir
+        :param pad:         apply zeros padding around the matrix following. Default is False
+        :param pad_window:  apply hanning padding
+        :param openCV:      use openCV algorithm to calculate FFT. Faster than numpy
+        :return:            Power_vec       -- 1D vector of the power from FFT
+                            Freq_vec,       -- 1D vector of the Frequency
+                            FreqMat         -- 2D matrix of frequency
+                            DFTperiodogram  -- 2D matrix of periodogram
+        '''
         nx, ny = mat.shape
+
+        # apply padding if asked
         if pad_window is True:
             img_pad, Wss = self.hann2d(mat)
         else:
@@ -72,7 +91,6 @@ class perron_fftDEM(object):
         fft_part = np.copy(DFTperiodogram[:, 0:np.int(Lx / 2)])
         fvec = np.copy(FreqMat[:, 0:np.int(Lx / 2)])
         fvec[yc:Ly-1, xc-1] = -1
-
         fvec = np.vstack((fvec.flatten(), fft_part.flatten())).T
         fvec= fvec[fvec[:, 0].argsort(),]
         fvec = np.copy(fvec[fvec[:, 0] > 0, :])
@@ -84,10 +102,21 @@ class perron_fftDEM(object):
         return Power_vec, Freq_vec, FreqMat, DFTperiodogram
 
     def fftdem(self, openCV=True):
+        '''
+        Function to perforn fftmat() on the dem loaded into the class
+        :param openCV: use
+        :return: update class self variable
+        '''
         self.nx, self.ny = self.dem.shape
         self.Power_vec, self.Freq_vec, self.FreqMat, self.DFTperiodogram = self.fftmat(self.dem, self.dx, self.dy, openCV=openCV)
 
     def hann2d(self, mat):
+        '''
+        Perform hanning filtering to a 2D matrix
+        :param mat: 2D input matrix
+        :return:    H -- 2D matrix including the filter
+                    Wss --
+        '''
         nx, ny = mat.shape
 
         # matrix coordinates of centroid
@@ -95,9 +124,7 @@ class perron_fftDEM(object):
         b = (ny + 1) / 2
 
         X, Y = np.meshgrid(np.arange(0, ny), np.arange(0, nx))
-
         theta = (X == a) * (np.pi / 2) + (X != a) * np.arctan2((Y - b), (X - a))  # angular polar coordinate
-
         r = np.sqrt((Y - b) ** 2 + (X - a) ** 2)  # radial polar coordinates
 
         # radius of ellipse for this theta
@@ -114,6 +141,13 @@ class perron_fftDEM(object):
         return
 
     def bin_scatter(self,x,y, nbins=10):
+        '''
+        Function to bin Y data base on X
+        :param x: 1D vector
+        :param y:  1D vector
+        :param nbins: number of evenly spaced bins
+        :return: a dataframe with various stats of Y for each bin
+        '''
 
         df = pd.DataFrame(np.transpose([x,y]))
         df.columns = ['freq', 'power']
@@ -153,6 +187,14 @@ class perron_fftDEM(object):
         self.plot_1D_spec(self.Freq_vec, self.Power_vec_norm, nbins=nbins, errorbar=errorbars)
 
     def normalized_spect(self, H, Zrange=1, nSynth=20, demVar=1):
+        '''
+        Function to perform the neormalization as in Perron et al. 2008 using the diamond square algorithm
+        :param H: roughness parameter. 0<H<1
+        :param Zrange: Elevation range of the synthetic terrain model
+        :param nSynth: number of terrain model to simulate for deriving normalization
+        :param demVar: Variance of the original DEM
+        :return: return within the class variable self.DFTperiodogram_norm, and self.Power_vec_norm
+        '''
         for i in range(1, nSynth+1):
             print 'Synthetic surface # ' + str(i) + ' of ' + str(nSynth)
             synthDEM = ds.diamondSquare(self.nx, self.ny, Zrange, H)
@@ -186,7 +228,7 @@ class perron_fftDEM(object):
         bin_spec_normed = self.bin_scatter(self.Freq_vec, P, nbins=15)
 
         self.synth_rmse = np.sqrt(np.mean((bin_spec.power_mean - bin_spec_normed.power_mean)**2))
-        print self.synth_rmse
+        print 'rmse = ' + str(self.synth_rmse)
 
 if __name__ == '__main__':
 
