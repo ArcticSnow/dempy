@@ -7,8 +7,9 @@ Perron, J.T., J.W. Kirchner and W.E. Dietrich (2008), Spectral signatures of cha
 and non-fractal structure in landscapes, Journal of Geophysical Research - Earth Surface.
 
 '''
-
+from __future__ import division
 import numpy as np
+
 
 def diamondSquare(nrows, ncols, Zrange, Roughness, seed=False):
 
@@ -146,12 +147,12 @@ def diamondSquare(nrows, ncols, Zrange, Roughness, seed=False):
         if tSize == 1:
             break
 
-    T = terrain[0:nrows-1, 0:ncols-1] # clip out a matrix of the requested size
+    T = terrain[0:nrows, 0:ncols] # clip out a matrix of the requested size
 
     return T
 
 if __name__ == '__main__':
-    diamondSquare(100,100,5,0.5)
+    t=diamondSquare(100,100,5,0.5)
 
 
 

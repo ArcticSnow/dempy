@@ -1,7 +1,10 @@
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-
+import pandas as pd
+import decomposition.diamondSquare as ds
+from scipy.stats import chi2
 
 class perron_fftDEM(object):
     def __init__(self):
@@ -10,71 +13,93 @@ class perron_fftDEM(object):
         self.dy = self.dx
         self.nx = None
         self.ny = None
+        self.FreqMat = None
+        self.DFTperiodogram = None
+        self.Power_vec = None
+        self.fshift = None
+        self.Freq_vec = None
+        self.DFTperiodogram_norm = None
+        self.Power_vec_norm = None
 
-
-    def fftdem(self, pad=False, pad_window=True, openCV=True):
-        self.nx, self.ny = self.dem.shape
+    def fftmat(self, mat,dx=1,dy=1, pad=False, pad_window=True, openCV=False, ret=False):
+        nx, ny = mat.shape
         if pad_window is True:
-            img_pad, Wss = self.hann2d(ret=True)
+            img_pad, Wss = self.hann2d(mat)
         else:
-            Wss = np.sum(np.sum(np.ones((self.ny, self.nx))))
+            Wss = np.ones((ny, nx)).sum()
 
         if pad is True:
             print "Needs to be implemented"
         else:
-            Lx = self.nx
+            Lx = np.int(nx)
             Ly = Lx
 
         if (pad is False) and (pad_window is False):
-            Lx = 2 ** (np.ceil(np.log(np.max(self.nx, self.ny)) / np.log(2)))
+            Lx = np.int(2 ** (np.ceil(np.log(np.max([nx, ny])) / np.log(2))))
             Ly = Lx
+
             print "image must be padded"
 
         # Frequency increments: from zero to Nyquist freq 1(2*dx)
-        dfx = 1/(self.dx * Lx)
-        dfy = 1/(self.dy * Ly)
+        dfx = 1/(dx * Lx)
+        dfy = 1/(dy * Ly)
+
 
         # calculate the 2D FFT
         if openCV:
-            fft = cv2.dft(np.float32(self.dem), flags=cv2.DFT_COMPLEX_OUTPUT)
+            fft = cv2.dft(np.float32(mat), flags=cv2.DFT_COMPLEX_OUTPUT)
+            print fft.shape
+            print fft[1,1,:]
+            fshift = np.fft.fftshift(fft)
+            DFTperiodogram = np.copy(cv2.magnitude(fshift[:,:,0],fshift[:,:,1])**2)
+
         else:
-            fft = np.fft.fft2(self.dem)
+            fft = np.fft.fft2(mat)
+            print fft.shape
+            print fft[1,1]
 
-        self.fshift = np.fft.fftshift(fft)
+            fshift = np.fft.fftshift(fft)
 
-        # Making sure the fft of the dem is detrented as the padding might add a bias from the previously detrended dem
-        self.fshift[Ly / 2 + 1, Lx / 2 + 1] = 0
+            # Making sure the fft of the dem is detrented as the padding might add a bias from the previously detrended dem
+            #fshift[np.int(Ly / 2), np.int(Lx / 2)] = 0
 
-        # derive DFT periodogram
-        self.DFTperiodogram = self.fshift * np.conj(self.fshift) / (Lx * Ly * Wss)
+            # derive DFT periodogram
+            #DFTperiodogram = np.copy(fshift * np.conj(fshift) / (Lx * Ly * Wss))
+            DFTperiodogram = np.copy(np.abs(fshift) ** 2)
 
         # matrix of radial frequencies
-        xc = Lx / 2 + 1
-        yc = Ly / 2 + 1
-        cols, rows = np.meshgrid(yc, xc)
-        self.FreqMat = np.sqrt((dfy * (rows - yc)) ** 2 + (dfx * (cols - xc)) ** 2)
+        xc = np.int(Lx / 2)
+        yc = np.int(Ly / 2)
+        cols, rows = np.meshgrid(np.arange(0, Lx), np.arange(0, Ly))
+        FreqMat = np.sqrt((dfy * (rows - yc)) ** 2 + (dfx * (cols - xc)) ** 2)
 
         # vector of sorted frequency and power
-        fft_part = self.DFTperiodogram[:, 1:(Lx / 2 + 1)]
-        fvec = self.FreqMat[:, 1:(Lx / 2 + 1)]
-        fvec[(yc + 1):Ly, xc] = -1
-        fvec = np.sort(np.concatenate(fvec, fft_part, 0), 0)
-        fvec = fvec[fvec[:, 1] > 0, :]
+        fft_part = np.copy(DFTperiodogram[:, 0:np.int(Lx / 2)])
+        fvec = np.copy(FreqMat[:, 0:np.int(Lx / 2)])
+        fvec[yc:Ly-1, xc-1] = -1
+
+        fvec = np.vstack((fvec.flatten(), fft_part.flatten())).T
+        fvec= fvec[fvec[:, 0].argsort(),]
+        fvec = np.copy(fvec[fvec[:, 0] > 0, :])
 
         # separate into power and frequency vectors
-        self.Power_vec = 2 * fvec[:, 2]
-        self.Freq_vec = fvec[:, 1]
+        Power_vec = 2 * fvec[:, 1]
+        Freq_vec = fvec[:, 0]
 
-        if ret is True:
-            return self.Power_vec, self.Freq_vec, self.FreqMat, self.DFTperiodogram
+        return Power_vec, Freq_vec, FreqMat, DFTperiodogram
 
-    def hann2d(self, ret=False):
+    def fftdem(self, openCV=True):
+        self.nx, self.ny = self.dem.shape
+        self.Power_vec, self.Freq_vec, self.FreqMat, self.DFTperiodogram = self.fftmat(self.dem, self.dx, self.dy, openCV=openCV)
+
+    def hann2d(self, mat):
+        nx, ny = mat.shape
 
         # matrix coordinates of centroid
-        a = (self.nx + 1) / 2
-        b = (self.ny + 1) / 2
+        a = (nx + 1) / 2
+        b = (ny + 1) / 2
 
-        X, Y = np.meshgrid(self.ny, self.nx)
+        X, Y = np.meshgrid(np.arange(0, ny), np.arange(0, nx))
 
         theta = (X == a) * (np.pi / 2) + (X != a) * np.arctan2((Y - b), (X - a))  # angular polar coordinate
 
@@ -84,37 +109,104 @@ class perron_fftDEM(object):
         rprime = np.sqrt((a ** 2) * (b ** 2) * (b ** 2 * (np.cos(theta)) ** 2 + a ** 2 * (np.sin(theta)) ** 2) ** (-1))
 
         hanncoeff = (r < rprime) * (0.5 * (1 + np.cos(np.pi * r / rprime)))
-        H = self.dem * hanncoeff
+        H = mat * hanncoeff
 
-        Wss = np.sum(np.sum(hanncoeff ** 2))
+        Wss = (hanncoeff ** 2).sum()
 
-        if ret is True:
-            return H, Wss
+        return H, Wss
 
     def plot_2D_spec(self):
         return
 
-    def plot_1D_spec(self):
+    def bin_scatter(self,x,y, nbins=10):
 
-        # Add code to derive bining version of the periodogram
-        print 'code for bining!'
+        df = pd.DataFrame(np.transpose([x,y]))
+        df.columns = ['freq', 'power']
+        freq_cut, bins = pd.cut(df.freq, nbins, retbins=True)
+        binned = df.groupby(freq_cut)
+
+        spect1D_bin = pd.DataFrame()
+        spect1D_bin['freq'] = [(a + b) / 2 for a, b in zip(bins[:-1], bins[1:])]
+        spect1D_bin['power_min'] = binned.power.min().as_matrix()
+        spect1D_bin['power_max'] = binned.power.max().as_matrix()
+        spect1D_bin['power_mean'] = binned.power.mean().as_matrix()
+        spect1D_bin['power_std'] = binned.power.std().as_matrix()
+
+        print spect1D_bin
+
+        return spect1D_bin
+
+    def plot_1D_spec(self,x, y, nbins=10, errorbar=False):
+
         # Create figure
         plt.figure()
-        plt.scatter(self.Freq_vec, self.Power_vec)
+        plt.scatter(x, y)
         plt.yscale('log')
         plt.xscale('log')
-        plt.xlabel('Frequency')
+        plt.xlabel('Frequency [1/m]')
         plt.ylabel('DFT mean squared amplitude')
         plt.title('Periodogram')
 
+        scat_bin = self.bin_scatter(x,y,nbins=nbins)
+        plt.plot(scat_bin.freq, scat_bin.power_mean,color='k')
+        plt.scatter(scat_bin.freq, scat_bin.power_mean, s=50, c='k')
+        if errorbar:
+            plt.errorbar(scat_bin.freq, scat_bin.power_mean, yerr=scat_bin.power_std/2, color='k')
 
+    def plot_1D_specDEM(self, nbins=10, errorbars=False):
+        self.plot_1D_spec(self.Freq_vec, self.Power_vec, nbins=nbins, errorbar=errorbars)
 
+    def plot_1D_specNORM(self, nbins=10, errorbars=False):
+        self.plot_1D_spec(self.Freq_vec, self.Power_vec_norm, nbins=nbins, errorbar=errorbars)
 
+    def normalized_spect(self, H, Zrange=1, nSynth=20, demVar=1):
+        for i in range(1, nSynth+1):
+            print 'Synthetic surface # ' + str(i) + ' of ' + str(nSynth)
+            synthDEM = ds.diamondSquare(self.ny, self.nx, Zrange, H)
+            synthDEM = synthDEM * np.sqrt(demVar)/np.std(synthDEM)
 
+            Pvec, fvec, freqmat, Pmat = self.fftmat(synthDEM, dx=self.dx, dy=self.dy, pad_window=True)
+            if i == 1:
+                P = Pvec
+                Pm = Pmat
+            else:
+                P = P + Pvec
+                Pm = Pm + Pmat
 
+        P = P / nSynth
+        Pm = Pm / nSynth
 
-p = perron_fftDEM()
-p.dem = t
-p.dx = 1
-p.dy=1
-p.fftdem()
+        # scale the average spectra so they have total power = var. This step is
+        # necessary because the average of N spectra, each of which has total power
+        # X, will not necessarily have totalpower = X.
+        P = P*demVar/np.nansum(P)
+        Pm = Pm*demVar/np.nansum(Pm)
+
+        if self.DFTperiodogram is None:
+            raise ValueError('run fftdem() first to evaluate DEMs transform')
+
+        self.DFTperiodogram_norm = self.DFTperiodogram / Pm
+        self.Power_vec_norm = self.Power_vec / P
+
+        print np.nanmax(self.DFTperiodogram_norm)
+        # estimate misfit between synthetic dems and original one. This RMSE should be minize to by tuning H
+
+if __name__ == '__main__':
+
+    # script to demonstrate how to use perron_fftDEM() based on a random surface
+    t = ds.diamondSquare(100,100,20,.3)
+    p = perron_fftDEM()
+    p.dem = t
+    p.dx = 1
+    p.dy = 1
+    p.fftdem()
+    p.normalized_spect(H=0.7, demVar=p.Power_vec.sum())
+
+    plt.imshow(p.DFTperiodogram_norm>chi2.pdf(.90, 2))
+
+    p.plot_1D_specDEM(30)
+    p.plot_1D_spec(nbins=30)
+
+    plt.figure()
+    plt.plot(p.Power_vec)
+
