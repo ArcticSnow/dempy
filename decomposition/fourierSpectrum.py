@@ -23,7 +23,7 @@ https://www.cs.auckland.ac.nz/courses/compsci773s1c/lectures/ImageProcessing-htm
 class fftImage(object):
     def __init__(self):
         self.img = None
-        self.rows, self.cols = img.shape
+        self.rows, self.cols = None, None
         self.dx = 1
         self.Fnyquist = 1/(2*self.dx)
 
@@ -37,18 +37,20 @@ class fftImage(object):
             return self.img_sm
 
     def window_pad(self, ret=False):
-        w1 = np.cos(np.linspace(-np.pi / 2, np.pi / 2, cols))
-        w2 = np.cos(np.linspace(-np.pi / 2, np.pi / 2, rows))
+        self.rows, self.cols = self.img.shape
+        w1 = np.cos(np.linspace(-np.pi / 2, np.pi / 2, self.cols))
+        w2 = np.cos(np.linspace(-np.pi / 2, np.pi / 2, self.rows))
         W = np.outer(w2, w1)
         self.img_pad = self.img * W
         if ret is True:
             return self.img_pad
 
     def pad(self, ret=False):
-        nrows = cv2.getOptimalDFTSize(rows)
-        ncols = cv2.getOptimalDFTSize(cols)
-        right = ncols - cols
-        bottom = nrows - rows
+        self.rows, self.cols = self.img.shape
+        nrows = cv2.getOptimalDFTSize(self.rows)
+        ncols = cv2.getOptimalDFTSize(self.cols)
+        right = ncols - self.cols
+        bottom = nrows - self.rows
         bordertype = cv2.BORDER_CONSTANT  # just to avoid line breakup in PDF file
         self.img_pad = cv2.copyMakeBorder(img, 0, bottom, 0, right, bordertype, value=0)
 
