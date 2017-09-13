@@ -10,6 +10,7 @@ from gdalconst import *
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import cv2
 
 # function to load a raster file
 def openRaster(InPath):
@@ -265,6 +266,18 @@ def plot_hist(map,nbin):
     plt.figure()
     plt.hist(map.flatten(), bins=nbin)
     plt.show()
+
+def rotateArray(mat, angle):
+    '''
+    Function to rotate a 2D matrix of a given angle
+    :param mat: 2d input matrix
+    :param angle: angle in
+    :return:
+    '''
+    mat_center = tuple(np.array(mat.shape)/2)
+    rot_mat = cv2.getRotationMatrix2D(mat_center,angle,1.0)
+    result = cv2.warpAffine(mat, rot_mat, mat.shape,flags=cv2.INTER_LINEAR)
+    return result
 
 
 def detrend(M):

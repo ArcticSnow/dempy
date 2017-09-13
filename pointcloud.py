@@ -28,7 +28,7 @@ def loadLAS2XYZ(filepath):
 
 
 @timing
-def loadLAS2XYZ(filepath):
+def loadLAS2XYZAIR(filepath):
     '''
     Function to load in console the pointcloud of a LAS file with points attributes
     :param filepath: filepath of the LAS file
