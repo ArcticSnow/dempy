@@ -1,9 +1,10 @@
 from __future__ import division
+import pyximport; pyximport.install()
+import ds
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import pandas as pd
-import diamondSquare as ds
 from scipy.stats import chi2
 import smooth2d as sm
 
@@ -27,23 +28,24 @@ class fftDecomposition(object):
         self.Power_vec_norm = None
         self.radial_power = None
         self.radial_freq = None
+        self.dem_pad = None
 
-    def smoothing(self, Kernel_size=None, ret=False):
+    def smoothing(self, kernel_size=None, ret=False):
         '''
         Function to smooth
         :param Kernel_size:
         :param ret:
         :return:
         '''
-        if Kernel_size is None:
-            Kernel_size = np.int(np.min(self.dem.shape)/3)
-        kernel = sm.kernel_square(Kernel_size)
+        if kernel_size is None:
+            kernel_size = np.int(np.min(self.dem.shape)/3)
+        kernel = sm.kernel_square(kernel_size)
         self.dem_sm = sm.smooth(self.dem, kernel)
         self.dem = self.dem - self.dem_sm
         if ret is True:
             return self.dem_sm
 
-    def fftmat(self, mat,dx=1,dy=1, pad=False, pad_window=True, openCV=True):
+    def fftmat(self, mat, dx=1, dy=1, pad=False, pad_window=True, openCV=True):
         '''
         Function to derive Fourier transform. Returns 2D and 1D periodogram
         :param mat:         input 2D matirx
@@ -61,19 +63,21 @@ class fftDecomposition(object):
 
         # apply padding if asked
         if pad_window is True:
-            img_pad, Wss = self.hann2d(mat)
-        else:
-            Wss = np.ones((ny, nx)).sum()
+            img_pad = self.hann2d(mat)
 
         if pad is True:
             print "Needs to be implemented"
+            Lx = np.int(2 ** (np.ceil(np.log(np.max([nx, ny])) / np.log(2))))
+            Ly = Lx
+            img_pad = mat
         else:
             Lx = np.int(nx)
             Ly = Lx
 
         if (pad is False) and (pad_window is False):
-            Lx = np.int(2 ** (np.ceil(np.log(np.max([nx, ny])) / np.log(2))))
+            Lx = np.int(nx)
             Ly = Lx
+            img_pad = mat
 
             print "image must be padded"
 
@@ -81,12 +85,16 @@ class fftDecomposition(object):
         dfx = 1/(dx * Lx)
         dfy = 1/(dy * Ly)
 
+        print 'Lx=' +str(Lx)
+        print 'Ly=' + str(Ly)
+        print img_pad.shape
+
 
         # calculate the 2D FFT
         if openCV:
-            fft = cv2.dft(np.float32(mat), flags=cv2.DFT_COMPLEX_OUTPUT)
+            fft = cv2.dft(np.float32(img_pad), flags=cv2.DFT_COMPLEX_OUTPUT)
             fshift = np.fft.fftshift(fft)
-            DFTperiodogram = np.copy(cv2.magnitude(fshift[:,:,0],fshift[:,:,1])**2)
+            DFTperiodogram = np.copy(cv2.magnitude(fshift[:, :, 0], fshift[:, :, 1])**2)
 
         else:
             fft = np.fft.fft2(mat)
@@ -105,28 +113,37 @@ class fftDecomposition(object):
         cols, rows = np.meshgrid(np.arange(0, Lx), np.arange(0, Ly))
         FreqMat = np.sqrt((dfy * (rows - yc)) ** 2 + (dfx * (cols - xc)) ** 2)
 
+        Freq_vec = np.copy(FreqMat[xc:, yc:].flatten())
+        Power_vec = np.copy(DFTperiodogram[xc:, yc:].flatten())
+
         # vector of sorted frequency and power
-        fft_part = np.copy(DFTperiodogram[:, 0:np.int(Lx / 2)])
-        fvec = np.copy(FreqMat[:, 0:np.int(Lx / 2)])
-        fvec[yc:Ly-1, xc-1] = -1
-        fvec = np.vstack((fvec.flatten(), fft_part.flatten())).T
-        fvec= fvec[fvec[:, 0].argsort(),]
-        fvec = np.copy(fvec[fvec[:, 0] > 0, :])
+        # redesign this part!!!!!!!!!!!!!!!!
 
-        # separate into power and frequency vectors
-        Power_vec = 2 * fvec[:, 1]
-        Freq_vec = fvec[:, 0]
 
-        return Power_vec, Freq_vec, FreqMat, DFTperiodogram
+        # fft_part = np.copy(DFTperiodogram[:, 0:np.int(Lx / 2)])
+        # fmat = np.copy(FreqMat[:, 0:np.int(Lx / 2)])
+        # fmat[yc:Ly-1, xc-1] = -1
+        #
+        #
+        # fvec = np.vstack((fmat.flatten(1), fft_part.flatten(1)))
+        # print 'fvec shape: ' + str(fvec.shape)
+        # fvec= np.copy(fvec[:, fvec[0, :].argsort()])
+        # fvec = np.copy(fvec[:, (fvec[0, :] > 0)])
+        #
+        # # separate into power and frequency vectors
+        # Power_vec = 2 * fvec[1, :]
+        # Freq_vec = fvec[0, :]
 
-    def fftdem(self, openCV=True):
+        return Power_vec, Freq_vec, FreqMat, DFTperiodogram, img_pad
+
+    def fftdem(self, pad=False, pad_window=True, openCV=True):
         '''
         Function to perforn fftmat() on the dem loaded into the class
         :param openCV: use
         :return: update class self variable
         '''
         self.nx, self.ny = self.dem.shape
-        self.Power_vec, self.Freq_vec, self.FreqMat, self.DFTperiodogram = self.fftmat(self.dem, self.dx, self.dy, openCV=openCV)
+        self.Power_vec, self.Freq_vec, self.FreqMat, self.DFTperiodogram, self.dem_pad = self.fftmat(self.dem, self.dx, self.dy, pad=pad, pad_window=pad_window, openCV=openCV)
 
     def hann2d(self, mat):
         '''
@@ -151,9 +168,7 @@ class fftDecomposition(object):
         hanncoeff = (r < rprime) * (0.5 * (1 + np.cos(np.pi * r / rprime)))
         H = mat * hanncoeff
 
-        Wss = (hanncoeff ** 2).sum()
-
-        return H, Wss
+        return H
 
     def plot_2D_spec(self):
         return
@@ -204,6 +219,7 @@ class fftDecomposition(object):
     def plot_1D_specNORM(self, nbins=10, errorbars=False):
         self.plot_1D_spec(self.Freq_vec, self.Power_vec_norm, nbins=nbins, errorbar=errorbars)
         plt.title('Normalized periodogram')
+
     def normalized_spect(self, H, Zrange=1, nSynth=20, demVar=1):
         '''
         Function to perform the neormalization as in Perron et al. 2008 using the diamond square algorithm
@@ -218,7 +234,9 @@ class fftDecomposition(object):
             synthDEM = ds.diamondSquare(self.nx, self.ny, Zrange, H)
             synthDEM = synthDEM * np.sqrt(demVar)/np.std(synthDEM)
 
-            Pvec, fvec, freqmat, Pmat = self.fftmat(synthDEM, dx=self.dx, dy=self.dy, pad_window=True)
+            Pvec, fvec, freqmat, Pmat, dem_pad = self.fftmat(synthDEM, dx=self.dx, dy=self.dy, pad_window=True)
+
+
             if i == 1:
                 P = Pvec
                 Pm = Pmat
@@ -266,7 +284,7 @@ class fftDecomposition(object):
         y, x = np.indices(self.DFTperiodogram.shape)
 
         if not center:
-            center = np.array([(x.max() - x.min()) / 2.0, (x.max() - x.min()) / 2.0])
+            center = np.array([(x.max() +1 - x.min()) / 2.0, (x.max()+1 - x.min()) / 2.0])
 
         print center
         r = np.hypot(x - center[0], y - center[1])
@@ -289,7 +307,14 @@ class fftDecomposition(object):
         tbin = csim[rind[1:]] - csim[rind[:-1]]
 
         self.radial_power = tbin / nr
-        self.radial_freq = (1/self.dx)*(np.linspace(0, self.radial_power.__len__()/2-1, self.radial_power.__len__()))
+        #self.radial_freq = (1/self.dx)*(np.linspace(0, self.radial_power.__len__()/2-1, self.radial_power.__len__()))
+
+        Lx, Ly = self.dem_pad.shape
+        xc = np.int(Lx / 2)
+        yc = np.int(Ly / 2)
+        dfx = 1 / (self.dx * Lx)
+        dfy = 1 / (self.dy * Ly)
+        self.radial_freq = np.linspace(0, np.sqrt((dfy * (Lx - yc)) ** 2 + (dfx * (Ly - xc)) ** 2), self.radial_power.__len__())
 
         if ret is True:
             return self.radial_power, self.radial_freq
@@ -302,7 +327,7 @@ if __name__ == '__main__':
     p.dem = t
     p.dx = 1
     p.dy = 1
-    p.smoothing(Kernel_size=20)
+    p.smoothing(kernel_size=20)
     p.fftdem()
 
     # To generate synthetic spectrum, use H that minimizes the RMSE (could be done incrementaly)
