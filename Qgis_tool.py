@@ -19,3 +19,20 @@ def qgis_colorramp(Zmin, Zmax, Extmin, Extmax, cptFile):
     mycommand = "qgis-colorramp.py --vmin " + str(Zmin) + " --vmax " + str(Zmax) + " --extend " + str(Extmin) + " " + str(Extmax) + " " + cptFile
     os.system(mycommand)
 
+
+
+def plot_colorbar(vmin=0, vmax=10, title='Title Here'):
+
+    fig = plt.figure()
+    ax = fig.add_axes([0.05, 0.80, 0.9, 0.15])
+
+    cmap = mpl.cm.Spectral_r
+    norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax )
+
+    cb =mpl.colorbar.ColorbarBase(ax, cmap=cmap, norm=norm, orientation='horizontal', extend='both')
+    cb.set_label(title)
+
+    return fig
+
+
+

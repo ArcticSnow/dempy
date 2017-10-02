@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 import pandas as pd
-import decomposition.diamondSquare as ds
+import diamondSquare as ds
 from scipy.stats import chi2
 
 class perron_fftDEM(object):
