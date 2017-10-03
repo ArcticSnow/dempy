@@ -95,6 +95,7 @@ class fftDecomposition(object):
             fft = cv2.dft(np.float32(img_pad), flags=cv2.DFT_COMPLEX_OUTPUT)
             fshift = np.fft.fftshift(fft)
             DFTperiodogram = np.copy(cv2.magnitude(fshift[:, :, 0], fshift[:, :, 1])**2)
+            fft, fshift = None, None
 
         else:
             fft = np.fft.fft2(mat)
@@ -106,12 +107,14 @@ class fftDecomposition(object):
             # derive DFT periodogram
             #DFTperiodogram = np.copy(fshift * np.conj(fshift) / (Lx * Ly * Wss))
             DFTperiodogram = np.copy(np.abs(fshift) ** 2)
+            fft, fshift = None, None
 
         # matrix of radial frequencies
         xc = np.int(Lx / 2)
         yc = np.int(Ly / 2)
         cols, rows = np.meshgrid(np.arange(0, Lx), np.arange(0, Ly))
         FreqMat = np.sqrt((dfy * (rows - yc)) ** 2 + (dfx * (cols - xc)) ** 2)
+        rows, cols = None, None
 
         Freq_vec = np.copy(FreqMat[xc:, yc:].flatten())
         Power_vec = np.copy(DFTperiodogram[xc:, yc:].flatten())
@@ -159,14 +162,26 @@ class fftDecomposition(object):
         b = (ny + 1) / 2
 
         X, Y = np.meshgrid(np.arange(0, ny), np.arange(0, nx))
-        theta = (X == a) * (np.pi / 2) + (X != a) * np.arctan2((Y - b), (X - a))  # angular polar coordinate
+
+        inter = a * (np.pi / 2) + (X != a)
+        theta = inter * np.arctan2((Y - b), (X - a))  # angular polar coordinate
+        inter = None
+
         r = np.sqrt((Y - b) ** 2 + (X - a) ** 2)  # radial polar coordinates
+        X, Y = None, None
+
 
         # radius of ellipse for this theta
         rprime = np.sqrt((a ** 2) * (b ** 2) * (b ** 2 * (np.cos(theta)) ** 2 + a ** 2 * (np.sin(theta)) ** 2) ** (-1))
+        theta = None
 
-        hanncoeff = (r < rprime) * (0.5 * (1 + np.cos(np.pi * r / rprime)))
+        ind = (r < rprime) * 0.5
+        rrp = r / rprime
+        r, rprime = None, None
+        hanncoeff = ind * (1 + np.cos(np.pi * rrp))
+        ind = None
         H = mat * hanncoeff
+        hanncoeff, rpp = None, None
 
         return H
 
@@ -196,20 +211,21 @@ class fftDecomposition(object):
 
         return spect1D_bin
 
-    def plot_1D_spec(self,x, y, nbins=10, errorbar=False):
+    def plot_1D_spec(self,x, y, nbins=10, errorbar=False, bin_only=True):
 
         # Create figure
         plt.figure()
-        plt.scatter(x, y)
+        if bin_only is False:
+            plt.scatter(x, y)
+
+        scat_bin = self.bin_scatter(x,y,nbins=nbins)
+        plt.plot(scat_bin.freq, scat_bin.power_mean,color='k')
+        plt.scatter(scat_bin.freq, scat_bin.power_mean, s=50, c='k')
         plt.yscale('log')
         plt.xscale('log')
         plt.xlabel('Frequency [1/m]')
         plt.ylabel('DFT mean squared amplitude')
         plt.title('Periodogram')
-
-        scat_bin = self.bin_scatter(x,y,nbins=nbins)
-        plt.plot(scat_bin.freq, scat_bin.power_mean,color='k')
-        plt.scatter(scat_bin.freq, scat_bin.power_mean, s=50, c='k')
         if errorbar:
             plt.errorbar(scat_bin.freq, scat_bin.power_mean, yerr=scat_bin.power_std/2, color='k')
 
@@ -284,30 +300,37 @@ class fftDecomposition(object):
         y, x = np.indices(self.DFTperiodogram.shape)
 
         if not center:
-            center = np.array([(x.max() +1 - x.min()) / 2.0, (x.max()+1 - x.min()) / 2.0])
+            center = np.array([(x.max() + 1 - x.min()) / 2.0, (x.max()+1 - x.min()) / 2.0])
 
         print center
         r = np.hypot(x - center[0], y - center[1])
+        x, y =None, None
 
         # Get sorted radii
         ind = np.argsort(r.flat)
         r_sorted = r.flat[ind]
         i_sorted = self.DFTperiodogram.flat[ind]
+        ind = None
 
         # Get the integer part of the radii (bin size = 1)
         r_int = r_sorted.astype(int)
+        r_sorted = None
 
         # Find all pixels that fall within each radial bin.
         deltar = r_int[1:] - r_int[:-1]  # Assumes all radii represented
         rind = np.where(deltar)[0]  # location of changed radius
+        deltar = None
+
         nr = rind[1:] - rind[:-1]  # number of radius bin
 
         # Cumulative sum to figure out sums for each radius bin
         csim = np.cumsum(i_sorted, dtype=float)
         tbin = csim[rind[1:]] - csim[rind[:-1]]
+        csim, rind, i_sorted = None, None, None
 
         self.radial_power = tbin / nr
         #self.radial_freq = (1/self.dx)*(np.linspace(0, self.radial_power.__len__()/2-1, self.radial_power.__len__()))
+        tbin, nr = None, None
 
         Lx, Ly = self.dem_pad.shape
         xc = np.int(Lx / 2)

@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="dace1c1d-436e-413b-a6ef-418eaedbfb65" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/decomposition/ds.pyx" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/decomposition/fourierSpectrum.py" afterPath="$PROJECT_DIR$/decomposition/fourierSpectrum.py" />
     </list>
@@ -83,16 +82,15 @@
       <file leaf-file-name="fourierSpectrum.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/decomposition/fourierSpectrum.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1669">
-              <caret line="286" column="71" lean-forward="false" selection-start-line="286" selection-start-column="71" selection-end-line="286" selection-end-column="71" />
+            <state relative-caret-position="419">
+              <caret line="219" column="0" lean-forward="true" selection-start-line="219" selection-start-column="0" selection-end-line="219" selection-end-column="0" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
                 <element signature="e#250#330#1" expanded="false" />
                 <element signature="e#854#1246#0" expanded="false" />
-                <element signature="e#1336#4675#0" expanded="false" />
-                <element signature="e#6093#6923#0" expanded="false" />
-                <element signature="e#6993#7533#0" expanded="false" />
-                <element signature="e#7957#9919#0" expanded="false" />
+                <element signature="e#1336#4781#0" expanded="false" />
+                <element signature="e#6405#7235#0" expanded="false" />
+                <element signature="e#8318#10280#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -415,7 +413,14 @@
       <option name="project" value="LOCAL" />
       <updated>1505305003557</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="fftdem working fine">
+      <created>1505979885664</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1505979885664</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TodoView">
@@ -428,7 +433,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="0" width="1278" height="1598" extended-state="4" />
+    <frame x="0" y="0" width="1278" height="1598" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.34056762" sideWeight="0.5" order="1" side_tool="false" content_ui="combo" />
@@ -461,7 +466,8 @@
     <MESSAGE value="added comments" />
     <MESSAGE value="fourier spectrum corrected" />
     <MESSAGE value="added matrix rotation, Spectrum decomposition reoganized" />
-    <option name="LAST_COMMIT_MESSAGE" value="added matrix rotation, Spectrum decomposition reoganized" />
+    <MESSAGE value="fftdem working fine" />
+    <option name="LAST_COMMIT_MESSAGE" value="fftdem working fine" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -836,16 +842,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/decomposition/fourierSpectrum.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1669">
-          <caret line="286" column="71" lean-forward="false" selection-start-line="286" selection-start-column="71" selection-end-line="286" selection-end-column="71" />
+        <state relative-caret-position="419">
+          <caret line="219" column="0" lean-forward="true" selection-start-line="219" selection-start-column="0" selection-end-line="219" selection-end-column="0" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
             <element signature="e#250#330#1" expanded="false" />
             <element signature="e#854#1246#0" expanded="false" />
-            <element signature="e#1336#4675#0" expanded="false" />
-            <element signature="e#6093#6923#0" expanded="false" />
-            <element signature="e#6993#7533#0" expanded="false" />
-            <element signature="e#7957#9919#0" expanded="false" />
+            <element signature="e#1336#4781#0" expanded="false" />
+            <element signature="e#6405#7235#0" expanded="false" />
+            <element signature="e#8318#10280#0" expanded="false" />
           </folding>
         </state>
       </provider>
