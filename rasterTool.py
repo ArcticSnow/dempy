@@ -75,7 +75,7 @@ def makeGeotransform(Xmin, dx, Ymax, dy):
 
 
 # function to save results as a geotiff raster file
-def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9999, epsg=32632):
+def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9999, epsg=32632, dataType='Float32', compression='LZW'):
     '''
     Save to a GeoTiff file the array\n
     **saveArray2rasterTif(filename, transform, myArray, OutPath)**
@@ -96,8 +96,22 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     cols = array.shape[1]
     rows = array.shape[0]
 
+    if dataType == 'Float32':
+        dataType = gdal.GDT_Float64
+    elif dataType== 'Int32':
+        dataType = gdal.GDT_Int32
+    else:
+        dataType = gdal.GDT_Float64
+
+    if compression == 'LZW':
+        compress = ['COMPRESS=LZW']
+    elif compression == 'JPEG':
+        compress = ['COMPRESS=JPEG']
+    else:
+        compress = None
+
     driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(fname, cols, rows, 1, gdal.GDT_Float64)
+    outRaster = driver.Create(fname, cols, rows, 1, dataType, options=compress)
     outRaster.SetGeoTransform(rasterGeotransform)
     outband = outRaster.GetRasterBand(1)
     outband.SetNoDataValue(_FillValue)
@@ -107,6 +121,7 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
     os.chdir(cwd)
+
 
 def fill_nodata(inPath, fileIn, filledPath, fileOut=None):
     '''
