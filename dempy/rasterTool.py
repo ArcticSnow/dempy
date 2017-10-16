@@ -205,6 +205,7 @@ def get_pt_value_rasterfile(rasterfile, Xs, Ys):
   gdata = None
   x = (Xs - gt[0])/gt[1]
   y = (Ys - gt[3])/gt[5]
+  print x.__len__()
   return data[y.astype('int'), x.astype('int')]
 
 
