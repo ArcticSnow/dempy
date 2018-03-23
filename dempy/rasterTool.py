@@ -160,9 +160,9 @@ def pad_nan_raster(myraster, newXmin, newYmax, newNx, newNy, fname, OutPath, _fi
     '''
     geoT = raster2array(myraster)[3]
     myarray = raster2array(myraster)[0]
-    print '==================='
-    print geoT
-    print myarray.shape
+    print('===================')
+    print(geoT)
+    print(myarray.shape)
 
     geoT = np.round(np.array(geoT), 1)
 
@@ -183,7 +183,7 @@ def pad_nan_raster(myraster, newXmin, newYmax, newNx, newNy, fname, OutPath, _fi
         if myarray.shape[1] < newNy:
             myarray = np.concatenate((myarray, np.full([newNy - myarray.shape[0], myarray.shape[1]], np.nan)), axis=0)
 
-    print myarray.shape
+    print(myarray.shape)
 
     saveArray2rasterTif(fname, myarray, makeGeotransform(geoT[0], geoT[1], geoT[3], -geoT[5]), OutPath, _FillValue=_fill_na, epsg=epsg)
 
@@ -205,7 +205,7 @@ def get_pt_value_rasterfile(rasterfile, Xs, Ys):
   gdata = None
   x = (Xs - gt[0])/gt[1]
   y = (Ys - gt[3])/gt[5]
-  print x.__len__()
+  print(x.__len__())
   return data[y.astype('int'), x.astype('int')]
 
 
@@ -355,7 +355,7 @@ def detrend(M):
     PlaneFit = -(norm[0] * X + norm[1] * Y + d) / norm[2]
     D = M - PlaneFit
     coeff = np.array([norm, d])
-    print ('Matrix detrended!')
+    print('Matrix detrended!')
     return D, coeff
 #======================= Test Zone =======================================
 

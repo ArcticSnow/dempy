@@ -64,7 +64,7 @@ def fftdem(dem, dx, dy=None, pad=None, window=None):
     nx = np.size(dem,1)
     ny = np.size(dem,0)
     if np.logical_not(pad) and (np.remainder(nx, 2) or np.remainder(ny, 2)):
-        print 'If either dimension of the input matrix is odd, it is recommended to pad with zeros.'
+        print('If either dimension of the input matrix is odd, it is recommended to pad with zeros.')
     if window:
         dem, Wss = hann2d(dem)
     else:
@@ -92,17 +92,17 @@ def fftdem(dem, dx, dy=None, pad=None, window=None):
     xc = int(Lx/2)
     yc = int(Ly/2) # matrix indices of zero frequency
     
-    dem2=pyfftw.n_byte_align_empty((Lx,Ly), 16, 'complex128')
-    dem2= pyfftw.interfaces.numpy_fft.fftshift(pyfftw.interfaces.numpy_fft.fft2(dem,(Ly,Lx)))
+    dem2 = pyfftw.n_byte_align_empty((Lx,Ly), 16, 'complex128')
+    dem2 = pyfftw.interfaces.numpy_fft.fftshift(pyfftw.interfaces.numpy_fft.fft2(dem,(Ly,Lx)))
     #dem = np.fft.fftshift(np.fft.fft2(dem,(Ly,Lx)))
     
-    if window==1 or pad==1 :
-        M=pyfftw.interfaces.numpy_fft.ifft2(pyfftw.interfaces.numpy_fft.ifftshift(dem2))
-        M=np.real(M)
+    if window == 1 or pad == 1 :
+        M = pyfftw.interfaces.numpy_fft.ifft2(pyfftw.interfaces.numpy_fft.ifftshift(dem2))
+        M = np.real(M)
     else:
-        M=dem
+        M = dem
     #M = np.real(np.fft.ifft2(np.fft.ifftshift(dem)))
-    dem2[yc, xc]=0 # Although the mean of the detrended
+    dem2[yc, xc] = 0 # Although the mean of the detrended
                            # matrix is zero, the mean of the
                            # windowed matrix may not be,
                            # so here we zero out the DC
@@ -168,7 +168,7 @@ def specfilt2d(fmat,f,filtype):
     '''
     if filtype=="lowpass":
         if np.size(f)!=2:
-            print "For lowpass filter, -f- requires 2 frequency indications such as: (flow,fhigh)=(.5,1)"
+            print("For lowpass filter, -f- requires 2 frequency indications such as: (flow,fhigh)=(.5,1)")
             return
         flo = f[0]
         fhi = f[1]
@@ -177,10 +177,10 @@ def specfilt2d(fmat,f,filtype):
         F[fmat<flo]=1
         
     elif filtype=="highpass":
-        print '\n ... Need to check code for Highpass because does not produce good product ... \n'
+        print('\n ... Need to check code for Highpass because does not produce good product ... \n')
         return
         if np.size(f)!=2:
-            print "For highpass filter, -f- requires 2 frequency indications such as: (flow,fhigh)=(.5,1)"
+            print("For highpass filter, -f- requires 2 frequency indications such as: (flow,fhigh)=(.5,1)")
             return
         flo = f[0]
         fhi = f[1]
@@ -190,10 +190,10 @@ def specfilt2d(fmat,f,filtype):
         
     else:
         if filtype != "bandpass":
-            print "filtype arguments must either be -lowpass-, -bandpass-, or -highpass- "
+            print("filtype arguments must either be -lowpass-, -bandpass-, or -highpass- ")
             return
         if np.size(f)!=4:
-            print "For bandpass filter, -f- requires 4 frequency indications such as: (flow1, flow2,fhigh1, fhigh2)=(.5,1,2,2.5)"
+            print("For bandpass filter, -f- requires 4 frequency indications such as: (flow1, flow2,fhigh1, fhigh2)=(.5,1,2,2.5)")
             return
         flo1 = f[0]
         flo2 = f[1]

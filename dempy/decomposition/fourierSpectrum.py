@@ -1,4 +1,3 @@
-from __future__ import division
 import pyximport; pyximport.install()
 import ds
 import numpy as np
@@ -66,7 +65,7 @@ class fftDecomposition(object):
             img_pad = self.hann2d(mat)
 
         if pad is True:
-            print "Needs to be implemented"
+            print("Needs to be implemented")
             Lx = np.int(2 ** (np.ceil(np.log(np.max([nx, ny])) / np.log(2))))
             Ly = Lx
             img_pad = mat
@@ -79,15 +78,15 @@ class fftDecomposition(object):
             Ly = Lx
             img_pad = mat
 
-            print "image must be padded"
+            print("image must be padded")
 
         # Frequency increments: from zero to Nyquist freq 1(2*dx)
         dfx = 1/(dx * Lx)
         dfy = 1/(dy * Ly)
 
-        print 'Lx=' +str(Lx)
-        print 'Ly=' + str(Ly)
-        print img_pad.shape
+        print('Lx=' +str(Lx))
+        print('Ly=' + str(Ly))
+        print(img_pad.shape)
 
 
         # calculate the 2D FFT
@@ -246,7 +245,7 @@ class fftDecomposition(object):
         :return: return within the class variable self.DFTperiodogram_norm, and self.Power_vec_norm
         '''
         for i in range(1, nSynth+1):
-            print 'Synthetic surface # ' + str(i) + ' of ' + str(nSynth)
+            print('Synthetic surface # ' + str(i) + ' of ' + str(nSynth))
             synthDEM = ds.diamondSquare(self.nx, self.ny, Zrange, H)
             synthDEM = synthDEM * np.sqrt(demVar)/np.std(synthDEM)
 
@@ -280,7 +279,7 @@ class fftDecomposition(object):
         bin_spec_normed = self.bin_scatter(self.Freq_vec, P, nbins=15)
 
         self.synth_rmse = np.sqrt(np.mean((bin_spec.power_mean - bin_spec_normed.power_mean)**2))
-        print 'rmse = ' + str(self.synth_rmse)
+        print('rmse = ' + str(self.synth_rmse))
 
     def azimuthalAverage(self, center=None, ret=False):
 
@@ -302,7 +301,7 @@ class fftDecomposition(object):
         if not center:
             center = np.array([(x.max() + 1 - x.min()) / 2.0, (x.max()+1 - x.min()) / 2.0])
 
-        print center
+        print(center)
         r = np.hypot(x - center[0], y - center[1])
         x, y =None, None
 

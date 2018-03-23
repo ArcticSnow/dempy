@@ -1,4 +1,3 @@
-from __future__ import division
 import tabler
 
 import numpy as np

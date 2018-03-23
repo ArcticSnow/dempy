@@ -290,7 +290,7 @@ def binData2D(myXYZ, xstart, xend, ystart, yend, nx, ny):
     print('Data cut in a ' + str(bins_x.__len__()) + ' by ' + str(bins_y.__len__()) + ' matrix')
     dx = (xend - xstart)/nx
     dy = (yend - ystart)/ny
-    print 'dx = ' + str(dx) + ' ; dy = ' + str (dy)
+    print('dx = ' + str(dx) + ' ; dy = ' + str (dy))
     grouped = df.groupby([x_cuts,y_cuts])
     print('Data grouped, \nReady to go!!')
     return grouped, bins_x, bins_y, int(bin_xmin), int(bin_ymin)
