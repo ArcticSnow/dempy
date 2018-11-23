@@ -33,7 +33,7 @@ def openRaster(InPath):
     return myRaster
     
 # function to convert raster data into an array ready for processing
-def raster2array(myRaster):
+def raster2array(myRaster, nan=-9999):
     '''
     raster2array()   Convert Gdal raster object to  2 array. The raster object has to have only one band\n
     **data, dx, dy, transform = raster2array(myRaster)**\n
@@ -57,6 +57,7 @@ def raster2array(myRaster):
     Ysize=myRaster.RasterYSize
     data=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
     myRaster=None
+    data[data==-9999]=np.nan
     return data, dx, dy, transform
 
 
@@ -121,6 +122,26 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
     outband.FlushCache()
     os.chdir(cwd)
+
+
+def clip_raster(array, geotransform, clip_bb):
+    '''
+    Function to clip raster to a smaller zone given an extent in [Xmin, Xmax, Ymin, Ymax]
+    :param array:           2d array to crop
+    :param geotransform:    geotransform from the raster
+    :param clip_bb:         clip extent [Xmin, Xmax, Ymin, Ymax]
+    :return:                2D array clipped, and new geotransform of this clip
+    '''
+
+    Y = np.round(np.arange(geotransform[3], geotransform[3]+array.shape[0]*dy,dy))
+    X = np.round(np.arange(geotransform[0], geotransform[0]+array.shape[1]*dx,dx))
+
+    Xs, Ys = np.meshgrid(X,Y)
+    clip_mask = np.where((Xs>clip_bb[0])&(Xs<clip_bb[1])&(Ys>clip_bb[2])&(Ys<clip_bb[3]), True, False)
+
+    myclip = array[clip_mask].reshape(np.sum(clip_mask,0).max(), np.sum(clip_mask,1).max())
+    newGeoTrans = (clip_bb[0], geotransform[1], geotransform[2], clip_bb[3], geotransform[4], geotransform[5])
+    return myclip, newGeoTrans
 
 
 def fill_nodata(inPath, fileIn, filledPath, fileOut=None):
