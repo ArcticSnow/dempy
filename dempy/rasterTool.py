@@ -12,6 +12,22 @@ import numpy as np
 import pandas as pd
 import cv2
 
+
+def tif2array(fname, nan=-9999):
+    '''
+    Function to read a geotif straight in to a numpy array. Currently tested only for 1 band rasters
+    '''
+    myRaster=gdal.Open(fname)
+    transform = myRaster.GetGeoTransform()
+    dx=transform[1]
+    dy=transform[5]
+    Xsize=myRaster.RasterXSize
+    Ysize=myRaster.RasterYSizes
+    data=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
+    myRaster=None
+    data[data==-9999]=np.nan
+    return data, dx, dy, transform
+
 # function to load a raster file
 def openRaster(InPath):
     '''
@@ -75,19 +91,19 @@ def makeGeotransform(Xmin, dx, Ymax, dy):
     return [Xmin, dx, 0, Ymax, 0, -dy]
 
 
-# function to save results as a geotiff raster file
-def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9999, epsg=32632, dataType='Float32', compression='LZW'):
+def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9999, epsg=32632, 
+                        dataType='Float32', compression='LZW', flip_array=False):
     '''
-    Save to a GeoTiff file the array\n
+    Save to a GeoTiff file the array
     **saveArray2rasterTif(filename, transform, myArray, OutPath)**
-    Copyright S Filhol
+    S. Filhol
     Dependencies: gdal, os, Tkinter, osr
-
     :param fname:  string of the new file name
-    :param array: 2D matrix containing the data to save as a raster file. If orientation of array in final raster is lipped try using    np.flipud(array)  as input
-    :param rasterGeotransform:
+    :param array: 2D/3D matrix containing the data to save as a raster file. if 3D array, the shape must be (nx,ny,bands).
+    :param rasterGeotransform: Raster geotransform (see gdal help): [Xmin, dx, 0, Ymax, 0, -dy]
     :param _FillValue: default -9999
-    :param OutPath: optional. String indicating the path where to save the file \n
+    :param OutPath: optional. String indicating the path where to save the file 
+    :param flip_array: flip the arras vertically. 
     :param epsg: projecton epsg code. default is 32632 for finse UTM 32N. 32606 for 6N (northern Alaska)
     :return:
     '''
@@ -96,6 +112,10 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
     os.chdir(OutPath)
     cols = array.shape[1]
     rows = array.shape[0]
+    if array.shape.__len__()==3:
+        bands = array.shape[2]
+    else:
+        bands = 1
 
     if dataType == 'Float32':
         dataType = gdal.GDT_Float64
@@ -112,16 +132,32 @@ def saveArray2rasterTif(fname, array, rasterGeotransform, OutPath, _FillValue=-9
         compress = None
 
     driver = gdal.GetDriverByName('GTiff')
-    outRaster = driver.Create(fname, cols, rows, 1, dataType, options=compress)
+    outRaster = driver.Create(fname, cols, rows, bands, dataType, options=compress)
     outRaster.SetGeoTransform(rasterGeotransform)
-    outband = outRaster.GetRasterBand(1)
-    outband.SetNoDataValue(_FillValue)
-    outband.WriteArray(array)
+    if bands>1:
+        for b in range(1,bands+1):
+            print('Saving band: ' + str(b))
+            outband = outRaster.GetRasterBand(b)
+            outband.SetNoDataValue(_FillValue)
+            if flip_array:
+                outband.WriteArray(np.flipud(array[:,:,b-1]))
+            else:
+                outband.WriteArray(array[:,:,b-1])
+                outband.FlushCache()
+    else:
+        outband = outRaster.GetRasterBand(1)
+        outband.SetNoDataValue(_FillValue)
+        if flip_array:
+            outband.WriteArray(np.flipud(array[:,:]))
+        else:
+            outband.WriteArray(array[:,:])
+            outband.FlushCache()
     outRasterSRS = osr.SpatialReference()
     outRasterSRS.ImportFromEPSG(epsg)
     outRaster.SetProjection(outRasterSRS.ExportToWkt())
-    outband.FlushCache()
+    print('Array saved to raster')
     os.chdir(cwd)
+
 
 
 def clip_raster(array, geotransform, clip_bb):
@@ -132,7 +168,8 @@ def clip_raster(array, geotransform, clip_bb):
     :param clip_bb:         clip extent [Xmin, Xmax, Ymin, Ymax]
     :return:                2D array clipped, and new geotransform of this clip
     '''
-
+    dx = geotransform[1]
+    dy = geotransform[5]
     Y = np.round(np.arange(geotransform[3], geotransform[3]+array.shape[0]*dy,dy))
     X = np.round(np.arange(geotransform[0], geotransform[0]+array.shape[1]*dx,dx))
 
@@ -142,6 +179,7 @@ def clip_raster(array, geotransform, clip_bb):
     myclip = array[clip_mask].reshape(np.sum(clip_mask,0).max(), np.sum(clip_mask,1).max())
     newGeoTrans = (clip_bb[0], geotransform[1], geotransform[2], clip_bb[3], geotransform[4], geotransform[5])
     return myclip, newGeoTrans
+
 
 
 def fill_nodata(inPath, fileIn, filledPath, fileOut=None):
