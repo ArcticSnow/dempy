@@ -13,6 +13,18 @@ import pandas as pd
 import cv2
 
 
+def openGeoTiff(fname, nan=-9999):
+    '''
+    Function to read geotif file and load data as array, along to the geotransform
+    :param fname: path and filename of the geotiff 
+    :param nan: value to interprete as nan
+    :return: data, geotransform
+    
+    '''
+    myrast = gdal.Open(fname)
+    data, dx, dy, geot = raster2array(myrast, nan=nan)
+    return data, geot
+
 def tif2array(fname, nan=-9999):
     '''
     Function to read a geotif straight in to a numpy array. Currently tested only for 1 band rasters
@@ -22,7 +34,7 @@ def tif2array(fname, nan=-9999):
     dx=transform[1]
     dy=transform[5]
     Xsize=myRaster.RasterXSize
-    Ysize=myRaster.RasterYSizes
+    Ysize=myRaster.RasterYSize
     data=myRaster.ReadAsArray(0, 0, Xsize, Ysize)
     myRaster=None
     data[data==-9999]=np.nan
@@ -289,6 +301,31 @@ def get_pt_value_from_df(rasterMat, geoTransform, df_XsYs, colName='sample'):
     df_sampled.columns = ['Xs', 'Ys', 'sample']
 
     return df_sampled
+
+def extract_line(z, xs, ys, geot):
+    '''
+    Function to extract value from raster (2D array) along along a line, using nearest neightbor method
+    
+    :param z: 2D array of the raster
+    :param xs: x0 and x1 coordinate values of the two line extremities. Example: np.array([10,35])
+    :param ys: y0 and y1 coordinate values of the two line extremities. Example: np.array([100,50])
+    :param geot: raster geotransform
+    :return: x_real, y_real which are the coordinate of the pixel sampled, and zi which is the vector of associated smapled values
+    '''
+
+    pt_x_pix = (xs - geot[0])/dx
+    pt_y_pix = z.shape[0] - (ys - (geot[3] - dx*z.shape[0]))/dx
+    
+    length_real = np.sqrt((pt_x[0]-pt_x[1])**2 - (pt_y[0]-pt_y[1])**2)
+    length_pix = int(length_real / dx)
+    x = np.linspace(pt_x_pix[0],pt_x_pix[1], length_pix)
+    y = np.linspace(pt_y_pix[0],pt_y_pix[1], length_pix)
+    zi = z[y.astype(np.int),x.astype(np.int)]
+
+    x_real = x * dx + geot[0]
+    y_real = y * dx + (geot[3] - dx*z.shape[0])
+
+    return x_real, y_real, zi
 
 
 
