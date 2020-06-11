@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import cv2
+import scipy.interpolate as interp
 
 
 def openGeoTiff(fname, nan=-9999):
@@ -261,13 +262,36 @@ def pad_nan_raster(myraster, newXmin, newYmax, newNx, newNy, fname, OutPath, _fi
 
 
 
-def plot_raster(raster, band):
-    mat = raster.GetRasterBand(band).ReadAsArray()
-    plt.figure()
-    plt.imshow(mat)
-    plt.colorbar()
-    plt.show()
+def plot_raster(raster, band=1, ax=None, cmap=plt.cm.gist_earth, nan_val=-9999, vmin=None, vmax=None):
+    '''
+    NOT WORKING
+    '''
+    from matplotlib.colors import LightSource
+    ls = LightSource(azdeg=315, altdeg=45)
 
+    mat = raster.GetRasterBand(band).ReadAsArray()
+    geot = raster.GetGeoTransform()
+    Xsize=raster.RasterXSize
+    Ysize=raster.RasterYSize
+    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3] + np.round(geot[5],3)*Ysize,geot[3]]
+    mat[mat==nan_val] = np.nan
+
+    if vmin is None:
+        vmin = np.nanmin(mat)
+    if vmax is None:
+        vmax = np.nanmax(mat)
+
+    if ax is None:
+        plt.figure()
+        plt.imshow(mat, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
+        plt.colorbar()
+        plt.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
+                       vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
+                       vmin=vmin, vmax=vmax), extent=extent)
+    else:
+        ax.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
+                       vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
+                       vmin=vmin, vmax=vmax), extent=extent)
 
 def get_pt_value_rasterfile(rasterfile, Xs, Ys):
   gdata = gdal.Open(rasterfile)
@@ -328,6 +352,65 @@ def extract_line(z, xs, ys, geot):
     return x_real, y_real, zi
 
 
+def extent_raster(raster, raster_file=None):
+    if raster is None:
+         myRaster = gdal.Open(raster_file)
+    elif raster_file is None:
+        myRaster = raster
+   
+    geot = myRaster.GetGeoTransform()
+    Xsize=myRaster.RasterXSize
+    Ysize=myRaster.RasterYSize
+    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3] + np.round(geot[5],3)*Ysize,geot[3]]
+    return extent
+
+
+
+
+def get_pt_value(df_point, raster_file, raster_band=1, interp_method='linear', nan_value=-9999):
+    '''
+    Function to extract point value from a raster
+    
+    :param df_point: Pandas dataframe with X, Y, of desired points to sample
+    :param raster_file: raster filepath
+    :param raster_band: band to sample
+    :param interp_method: interpolation method. See np.griddata() help
+    :nan_value: value recognized as nan in raster. Default -9999
+    :return:  pandas dataframe with the columns X,Y,value.
+    '''
+    
+    # Open reference DEM
+    dem_mic = raster_file
+    myRaster=gdal.Open(dem_mic)
+    geot = myRaster.GetGeoTransform()
+    Xsize=myRaster.RasterXSize
+    Ysize=myRaster.RasterYSize
+    data=myRaster.GetRasterBand(raster_band).ReadAsArray(0, 0, Xsize, Ysize)
+    data[data==nan_value] = np.nan
+
+    # define extent and resoltuion from geotiff metadata
+    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3], geot[3] + np.round(geot[5],3)*Ysize]
+
+    
+    # Create the X,Y coordinate meshgrid
+    Xs = np.linspace(extent[0]+np.round(geot[1],3),extent[1], Xsize)
+    Ys = np.linspace(extent[2]+ np.round(geot[5],3), extent[3], Ysize)
+    XX, YY = np.meshgrid(Xs, Ys)
+    
+    XY = np.vstack((XX.flatten(),YY.flatten())).T 
+    Z = data.flatten()
+
+    
+    ## Keep only points falling into the raster extent data to area of interest (extent)
+    #df_point.loc[(df_point.X < extent[0])|(df_point.X > extent[1])|(df_point.Y < extent[2])|(df_point.Y > extent[3])] = np.nan
+    #df_point.dropna(inplace=True)
+        
+    # Linear interpolation of the reference DEM at the location of the dGPS measurement
+    df_point['value'] = interp.griddata(XY, Z, (df_point.X, df_point.Y), method=interp_method)
+
+    return df_point
+
+
 
 def get_pt_value_from_df_guillaume(rastermat, gt, df):
     '''
@@ -353,13 +436,13 @@ def get_pt_value_from_df_guillaume(rastermat, gt, df):
 
 
 
-def get_pt_value_array(myarray, geotransform, Xs, Ys):
+def _old_get_pt_value_array(myarray, geotransform, Xs, Ys):
   x = (Xs - geotransform[0])/geotransform[1]
   y = (Ys - geotransform[3])/geotransform[5]
   return myarray[y.astype('int'), x.astype('int')]
 
 
-def get_pt_value_raster(myraster, Xs, Ys):
+def _old_get_pt_value_raster(myraster, Xs, Ys):
   gt = myraster.GetGeoTransform()
   data = myraster.ReadAsArray().astype(np.float)
   gdata = None
