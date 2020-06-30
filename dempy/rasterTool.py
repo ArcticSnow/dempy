@@ -262,12 +262,24 @@ def pad_nan_raster(myraster, newXmin, newYmax, newNx, newNy, fname, OutPath, _fi
 
 
 
-def plot_raster(raster, band=1, ax=None, cmap=plt.cm.gist_earth, nan_val=-9999, vmin=None, vmax=None):
+def plot_raster(raster, band=1, ax=None, cmap=plt.cm.gist_earth, nan_val=-9999, vmin=None, vmax=None, hillshade=False):
     '''
-    NOT WORKING
+    Function to plot raster with proper extent and possibility of hillshade
+    
+    :param raster: gdal raster object
+    :param band: band number to plot, defaults to 1
+    :param ax: provide pyplot axis if needed, defaults to None
+    :param cmap: pyplot colormap, defaults to plt.cm.gist_earth
+    :param nan_val: nan value of the raster, defaults to -9999
+    :param vmin: minimum value, defaults to None (takes min of raster). Float
+    :param vmax: maximum value, defaults to None (takes max of raster). float
+    :param hillshade: False return simple imshow() plot, True resturn colroscaled and hillshade blended, defaults to False
     '''
-    from matplotlib.colors import LightSource
-    ls = LightSource(azdeg=315, altdeg=45)
+
+  
+    if hillshade:
+        from matplotlib.colors import LightSource
+        ls = LightSource(azdeg=315, altdeg=45)
 
     mat = raster.GetRasterBand(band).ReadAsArray()
     geot = raster.GetGeoTransform()
@@ -285,13 +297,16 @@ def plot_raster(raster, band=1, ax=None, cmap=plt.cm.gist_earth, nan_val=-9999, 
         plt.figure()
         plt.imshow(mat, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
         plt.colorbar()
-        plt.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
-                       vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
-                       vmin=vmin, vmax=vmax), extent=extent)
+        if hillshade:
+            plt.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
+                           vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
+                           vmin=vmin, vmax=vmax), extent=extent)
     else:
-        ax.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
-                       vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
-                       vmin=vmin, vmax=vmax), extent=extent)
+        ax.imshow(mat, extent=extent, cmap=cmap, vmin=vmin, vmax=vmax)
+        if hillshade:
+            ax.imshow(ls.shade(mat, cmap=cmap, blend_mode='soft',
+                           vert_exag=1, dx=np.round(geot[1],3), dy=np.round(geot[5],3),
+                           vmin=vmin, vmax=vmax), extent=extent)
 
 
 def extract_line(z, xs, ys, geot):
@@ -320,7 +335,14 @@ def extract_line(z, xs, ys, geot):
     return x_real, y_real, zi
 
 
-def extent_raster(raster, raster_file=None):
+def extent_raster(raster=None, raster_file=None):
+    '''
+    Function to compute extent of a raster. The function accepts either a gdal object, or a path to a geotiff or gdal compatible raster format 
+
+    :param raster: Raster gdal object, defaults to None
+    :param raster_file: path to a raster object, gdal can open, defaults to None
+    :returns: a list of [xmin, xmax, ymin, ymax] of the raster extent
+    '''
     if raster is None:
          myRaster = gdal.Open(raster_file)
     elif raster_file is None:
@@ -329,7 +351,7 @@ def extent_raster(raster, raster_file=None):
     geot = myRaster.GetGeoTransform()
     Xsize=myRaster.RasterXSize
     Ysize=myRaster.RasterYSize
-    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3] + np.round(geot[5],3)*Ysize,geot[3]]
+    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3] + np.round(geot[5],3)*Ysize, geot[3]]
     return extent
 
 
@@ -357,12 +379,12 @@ def get_pt_value(df_point, raster_file, raster_band=1, interp_method='linear', n
     data[data==nan_value] = np.nan
 
     # define extent and resoltuion from geotiff metadata
-    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize, geot[3], geot[3] + np.round(geot[5],3)*Ysize]
+    extent = [geot[0], geot[0] + np.round(geot[1],3)*Xsize,  geot[3] + np.round(geot[5],3)*Ysize,geot[3]]
 
     
     # Create the X,Y coordinate meshgrid
     Xs = np.linspace(extent[0]+np.round(geot[1],3),extent[1], Xsize)
-    Ys = np.linspace(extent[2]+ np.round(geot[5],3), extent[3], Ysize)
+    Ys = np.linspace(extent[3]+ np.round(geot[5],3), extent[2], Ysize)
     XX, YY = np.meshgrid(Xs, Ys)
     
     XY = np.vstack((XX.flatten(),YY.flatten())).T 
