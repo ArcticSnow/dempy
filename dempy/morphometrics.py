@@ -273,6 +273,92 @@ def compute_tri(dem, window_size=3):
     return _compute_tri(tri, padded_dem, radius)
 
 
+def compute_slope_aspect(dem, window_size=3, pixel_size=1.0):
+    if window_size % 2 == 0:
+        raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
+
+    radius = window_size // 2
+    radius_float = float(radius)
+
+    dem64 = dem.astype(np.float64, copy=False)
+    slope = np.zeros_like(dem64, dtype=np.float64)
+    aspect = np.zeros_like(dem64, dtype=np.float64)
+
+    # Pad DEM
+    padded_dem = np.pad(dem64, radius, mode="edge")
+
+    # Precompute coordinates in *pixel units* (indices)
+    # We will convert to metric inside the kernel using pixel_size.
+    x_coords, y_coords = np.meshgrid(
+        np.arange(-radius_float, radius_float + 1, dtype=np.float64),
+        np.arange(-radius_float, radius_float + 1, dtype=np.float64),
+        indexing="xy"
+    )
+    x_flat = x_coords.ravel()
+    y_flat = y_coords.ravel()
+    len_x = x_flat.shape[0]
+
+
+    @njit(parallel=True)
+    def _compute_slope_aspect(slope_arr, aspect_arr, padded_dem,
+                              radius, x_flat, y_flat, len_x, method='lstsq'):
+
+        rows = slope_arr.shape[0]
+        cols = slope_arr.shape[1]
+
+        for i in prange(radius, rows + radius):
+            for j in range(radius, cols + radius):
+                # Extract the neighborhood
+                window = padded_dem[i-radius:i+radius+1, j-radius:j+radius+1]
+                z = window.ravel()
+                if method == 'svd':
+                    A = np.empty((len_x, 3), dtype=np.float64)
+                    A[:, 0] = x_flat - np.mean(x_flat)   # i
+                    A[:, 1] = y_flat - np.mean(y_flat)   # j
+                    A[:, 2] = z - np.mean(z)
+
+                    svd = np.linalg.svd(A)
+                    normal = svd[0][:,-1]
+                    a = normal[0]
+                    b = normal[1]
+                    
+                    # Slope is the magnitude of the gradient: sqrt(a^2 + b^2)
+                    slope_arr[i-radius, j-radius] = np.arctan(np.sqrt(a**2 + b**2))
+
+                    # Aspect is the direction of the gradient: atan2(-b, a)
+                    aspect_arr[i-radius, j-radius] = np.arctan2(-b, -a)
+                
+                elif method == 'lstsq':
+                    # Design matrix in *pixel* coordinates:
+                    # z = a i + b  j + c
+                    A = np.empty((len_x, 3), dtype=np.float64)
+                    A[:, 0] = x_flat    # i
+                    A[:, 1] = y_flat    # j
+                    A[:, 2] = 1.0       # constant
+
+                    # Solve for coefficients (a, b, c)
+                    coeffs = np.linalg.lstsq(A, z, rcond=-1.0)[0]
+                    a = coeffs[0]
+                    b = coeffs[1]
+
+                    # Slope is the magnitude of the gradient: sqrt(a^2 + b^2)
+                    slope_arr[i-radius, j-radius] = np.arctan(np.sqrt(a**2 + b**2))
+
+                    # Aspect is the direction of the gradient: atan2(-b, -a)
+                    aspect_arr[i-radius, j-radius] = np.arctan2(-b, -a)
+
+        return slope_arr, aspect_arr
+
+    slope, aspect = _compute_slope_aspect(slope, aspect, padded_dem, radius,
+                                          x_flat, y_flat, len_x)
+
+    # Convert aspect to have 0 at North and rotate clockwise
+    aspect = (aspect - 3*np.pi/2) % (2 * np.pi)
+
+    return slope, aspect
+
+
+
 def compute_slope(dem, window_size=3):
     if window_size % 2 == 0:
         raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
@@ -282,7 +368,7 @@ def compute_slope(dem, window_size=3):
     slope = np.zeros_like(dem, dtype=np.float32)
 
     @njit(parallel=True)
-    def _compute_slope(arr, padded_dem, radius):
+    def _compute_slope(arr, padded_dem, radius, pix_size):
         for i in prange(radius, rows + radius):
             for j in prange(radius, cols + radius):
                 dz_dx = (padded_dem[i, j+1] - padded_dem[i, j-1]) / 2.0
