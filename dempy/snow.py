@@ -12,7 +12,7 @@ Tabler's logic is as follow:
 
 
 TODO:
-- [ ] improve efficiency using cython or rust
+- [ ] improve efficiency using cython or rust or numba
 - [ ] mak sure tabler's function is complete 
 - [ ] add Liu et al 2025 wind factor
 - [ ] wrap each own methods into a class that can compute them based on a single DEM open as a dataset

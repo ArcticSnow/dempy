@@ -273,6 +273,18 @@ def compute_tri(dem, window_size=3):
     return _compute_tri(tri, padded_dem, radius)
 
 
+@njit(parallel=True)
+def compute_tai(aspect_high_res, aspect_smooth):
+    """
+    TAI: Terrain Aspect Index. Formulated by Titouan Biget
+    """
+    TAI = ((np.cos(aspect_smooth)-np.cos(aspect_high_res))**2+(np.sin(aspect_smooth)-np.sin(aspect_high_res))**2)**0.5
+    return TAI
+
+
+
+
+
 def compute_slope_aspect(dem, window_size=3, pixel_size=1.0):
     if window_size % 2 == 0:
         raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
