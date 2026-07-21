@@ -7,34 +7,15 @@ S. Filhol March 2026
 import numpy as np
 import cv2
 from numba import njit, prange, config, threading_layer
+from topocalc import viewf
 
 config.THREADING_LAYER = 'threadsafe'
 
+def compute_svf(dem, dx):
+    svf = viewf.viewf(np.double(dem), dx)[0]
+    
 
-def compute_aspect(dem, window_size=3):
-    if window_size % 2 == 0:
-        raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
-    radius = window_size // 2
-    padded_dem = np.pad(dem, radius, mode='edge')
-    rows, cols = dem.shape
-    aspect = np.zeros_like(dem, dtype=np.float32)
-
-    @njit(parallel=True)
-    def _compute_aspect(arr, padded_dem, radius):
-        for i in prange(radius, rows + radius):
-            for j in prange(radius, cols + radius):
-                dz_dx = (padded_dem[i, j+1] - padded_dem[i, j-1]) / 2.0
-                dz_dy = (padded_dem[i-1, j] - padded_dem[i+1, j]) / 2.0  # Note the change in dz_dy
-                arr[i-radius, j-radius] = np.arctan2(dz_dx, dz_dy)  # Swapped arguments
-        return arr
-
-    aspect = _compute_aspect(aspect, padded_dem, radius)
-
-    # Convert the aspect to have 0 at North and rotate clockwise
-    aspect = (np.pi/2 - aspect) % (2 * np.pi)
-
-    return aspect
-
+    return svf
 
 
 def compute_twi(dem, window_size=3):
@@ -370,26 +351,70 @@ def compute_slope_aspect(dem, window_size=3, pixel_size=1.0):
     return slope, aspect
 
 
+def compute_slope(
+    dem: np.ndarray,
+    pixel_size: float = 1.0,
+    window_size: int = 3,
+    method: str = "finite_differences"
+) -> np.ndarray:
+    """
+    Compute slope in radians from a DEM, accounting for pixel size.
 
-def compute_slope(dem, window_size=3):
-    if window_size % 2 == 0:
-        raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
-    radius = window_size // 2  # Convert window_size to radius
-    padded_dem = np.pad(dem, radius, mode='edge')
-    rows, cols = dem.shape
-    slope = np.zeros_like(dem, dtype=np.float32)
+    Args:
+        dem: 2D array of elevation values (meters).
+        pixel_size: Horizontal resolution of the DEM (meters per pixel).
+        window_size: Size of the window for finite differences (must be odd).
+                     Ignored if method="horn".
+        method: Method for slope calculation ("finite_differences" or "horn").
 
-    @njit(parallel=True)
-    def _compute_slope(arr, padded_dem, radius, pix_size):
-        for i in prange(radius, rows + radius):
-            for j in prange(radius, cols + radius):
-                dz_dx = (padded_dem[i, j+1] - padded_dem[i, j-1]) / 2.0
-                dz_dy = (padded_dem[i+1, j] - padded_dem[i-1, j]) / 2.0
-                arr[i-radius, j-radius] = np.arctan(np.sqrt(dz_dx**2 + dz_dy**2))
+    Returns:
+        2D array of slope values in radians.
+    """
+    if method == "finite_differences":
+        if window_size % 2 == 0:
+            raise ValueError("window_size must be odd (e.g., 3, 5, 7).")
+        radius = window_size // 2
+        padded_dem = np.pad(dem, radius, mode='edge')
+        rows, cols = dem.shape
+        slope = np.zeros_like(dem, dtype=np.float32)
 
-        return arr
-    
-    slope = _compute_slope(slope, padded_dem, radius)
+        @njit(parallel=True)
+        def _compute_slope_fd(arr, padded_dem, radius, pixel_size):
+            for i in prange(radius, rows + radius):
+                for j in prange(radius, cols + radius):
+                    dz_dx = (padded_dem[i, j+1] - padded_dem[i, j-1]) / (2.0 * pixel_size)
+                    dz_dy = (padded_dem[i+1, j] - padded_dem[i-1, j]) / (2.0 * pixel_size)
+                    arr[i-radius, j-radius] = np.arctan(np.sqrt(dz_dx**2 + dz_dy**2))
+            return arr
+
+        slope = _compute_slope_fd(slope, padded_dem, radius, pixel_size)
+
+    elif method == "horn":
+        radius = 3  # Fixed window size for Horn's method
+        padded_dem = np.pad(dem, radius, mode='edge')
+        rows, cols = dem.shape
+        slope = np.zeros_like(dem, dtype=np.float32)
+
+        @njit(parallel=True)
+        def _compute_slope_horn(arr, padded_dem, radius, pixel_size):
+            for i in prange(radius, rows + radius):
+                for j in prange(radius, cols + radius):
+                    dz_dx = (
+                        (padded_dem[i, j+1] + 2 * padded_dem[i, j+2] + padded_dem[i, j+3]) -
+                        (padded_dem[i, j-1] + 2 * padded_dem[i, j-2] + padded_dem[i, j-3])
+                    ) / (8.0 * pixel_size)
+                    dz_dy = (
+                        (padded_dem[i+1, j] + 2 * padded_dem[i+2, j] + padded_dem[i+3, j]) -
+                        (padded_dem[i-1, j] + 2 * padded_dem[i-2, j] + padded_dem[i-3, j])
+                    ) / (8.0 * pixel_size)
+                    arr[i-radius, j-radius] = np.arctan(np.sqrt(dz_dx**2 + dz_dy**2))
+            return arr
+
+        slope = _compute_slope_horn(slope, padded_dem, radius, pixel_size)
+
+    else:
+        raise ValueError("method must be 'finite_differences' or 'horn'.")
+
     return slope
 
 

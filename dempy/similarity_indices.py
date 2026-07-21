@@ -43,6 +43,14 @@ class multi_simularity():
         self.pairs = list(combinations(n_images, 2))
 
     # add code to compute indices for the stack of pairs. first create a dataset of dimension N_images**2  ds[ssim, nrmse, gms, ]
+    
+    def compute_all_pairs(self):
+
+        for pair in self.pairs:
+            sim_class = similarity(self.images[:,:,pair[0]], self.images[:,:,pair[1]])
+            sim_class.compute_metrics()
+
+
 
 
 
@@ -164,7 +172,6 @@ def compute_nrmse(im1, im2):
     return nrmse_results
 
 
-@njit(parallel=True)
 def compute_ssim(im1, im2):
     """
     Compute Structural Similarity Index of two single band images.
@@ -212,7 +219,6 @@ def compute_ssim(im1, im2):
     return ssim_scaled
 
 
-@njit(parallel=True)
 def cw_ssim(im1, im2, width):
     """
     Compute a complex wavelet implementation of SSIM (CW-SSIM).
@@ -333,7 +339,6 @@ def convolve(image, kernel):
     return output
 
 
-@njit(parallel=True)
 def compute_gms(im1, im2):
     """ Compute the Gradient Magnitude Similarity (GMS) and
     Deviation Index (GMSD) of two images.
