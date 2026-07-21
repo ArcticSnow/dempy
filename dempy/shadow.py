@@ -36,6 +36,13 @@ class DEMShadowMapper:
             dem_file (str or Path): Path to DEM projected in WGS84 (ESPG:4326)
             domain (dict): lat/lon bounding box of area fo interest
             dist_search (float): buffer distance around the area of interest to use for shadow computation
+
+        TODO:
+        - [ ] add function to compute for multiple timestamp and store output in dataset
+        - [ ] finish reproject_ds() function
+        - [ ] use this class as a base to do compute horizons and svf
+        - [ ] add check if DEM is in WGS84, otherwise raise error.
+
         """
         self.file_dem = Path(dem_file)
         self.path_out = self.file_dem.parent
@@ -213,7 +220,7 @@ class DEMShadowMapper:
         self.terrain.shadow(sun_position, shadow_buffer)
         out = xr.Dataset(
             {
-                "shadow": (("lat", "lon", "time"), np.expand_dims(sw_dir_cor_buffer, axis=2)),
+                "shadow": (("lat", "lon", "time"), np.expand_dims(shadow_buffer, axis=2)),
                 "sun_azimuth": (("time"), [float(sun_azimuth.degrees)]),
                 "sun_elevation": (("time"), [float(sun_elevation.degrees)])
             },
@@ -223,7 +230,7 @@ class DEMShadowMapper:
                 "time": [tstep]
             },
         )
-        out["shadow"].attrs["long_name"] = "Correction factor for direct downward shortwave radiation"
+        out["shadow"].attrs["long_name"] = "shadow mask (0: illuminated, 1: self-shaded, 2: terrain-shaded, 3: masked)"
         out["shadow"].attrs["more info"] = "shadow() according to Müller and Scherer (2005"
         out["sun_azimuth"].attrs["unit"] = "degrees"
         out["sun_elevation"].attrs["unit"] = "degrees"
@@ -235,13 +242,25 @@ class DEMShadowMapper:
         
         return out
 
-        out = xr.Dataset()
-        out["shadow"].attrs["long_name"] = (
-            "shadow mask (0: illuminated, 1: self-shaded, 2: terrain-shaded, "
-            "3: masked)"
-        )
 
-
+    def reproject_ds(ds, epsg_dst, transform, shape, resampling='bilinear'):
+        """
+        Function to reproject from WGS84 to any projection supported by rasterio, and crop to extent (using transform and shape)
+        
+        Args:
+            ds (dataset or dataarray): xarray dataset in WGS84 with lat/lon dimension
+            epsg_dst (int): epsg code of the destination projection 
+            transform (object): rasterio transform. 
+            shape (array or tuple): shape of the array to reproject
+        
+        TODO:
+        - [ ] add code to check if spatial dimention name are lat/lon or already x/y
+        - [ ] integrate better with class usign self. Maybe write independent function that is reussed in class. 
+        - [ ] identify why raster tif after this are not readable by QGIS.
+        """
+        # reproject output to desired EPSG and domain
+        dd = ds.rename({'lon':'x','lat':'y'}).rio.reproject(epsg_dst, transform=transform, resampling=resampling, shape=shape)
+        return dd
 
 #%%
 #========= Example usage ========
