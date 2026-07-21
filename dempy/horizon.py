@@ -2,38 +2,35 @@
 Python class to compute horizon angle. 
 S. Filhol, July 2026
 
+These classes build on the code examples from HORAYZON by C. Steger. 
 
 TODO:
-1. [ ] Implement horizon for Curved DEM
-2. [ ] Implement horizon for Planar DEM
+- [x] Implement horizon for Curved DEM
+- [x] Implement horizon for Planar DEM
+- [ ] Write a little example code 
 
 """
 #%%
 #========= Librairies imports ========
 import pdb
-import glob
 import numpy as np
 import xarray as xr
-import matplotlib.pyplot as plt
-from skyfield.api import load, wgs84
 import horayzon as hray
 from pathlib import Path
-import pandas as pd
-from matplotlib.widgets import MultiCursor
 
 
 #%%
 #========= Class definition ========
 
 class PlanarDEMHorizon:
-    def __init__(self, dem_file, domain, n_azimuth=360, dist_search=0.5):
+    def __init__(self, dem_file, domain, n_azimuth=360, dist_search=500):
         """
         Initialize class.
 
         Args:
             dem_file (str or Path): Path to DEM projected in WGS84 (ESPG:4326)
-            domain (dict): lat/lon bounding box of area fo interest
-            dist_search (float): buffer distance around the area of interest to use for shadow computation
+            domain (dict): X/Y (East/North) bounding box of area fo interest
+            dist_search (float): buffer distance around the area of interest to use for shadow computation. Unit is the same as the DEM spatial unit
 
         TODO:
         - [ ] test and debug
@@ -43,12 +40,9 @@ class PlanarDEMHorizon:
         self.path_out = self.file_dem.parent
         self.domain = domain            # same unit as DEM
         self.dist_search = dist_search  # same unit as DEM
-        self.ellps = "WGS84"
         self.n_azimuth = n_azimuth
 
-        self.trans_ecef2enu = None
         self.slice_in = None
-        self.vec_tilt_enu = None
         self.hori = None
         self.n_azimuth = None
         self.vec_north = None
@@ -218,11 +212,7 @@ class CurvedDEMHorizon:
                           np.where(self.lat <= self.domain["lat_min"])[0][0] + 1),
                     slice(np.where(self.lon <= self.domain["lon_min"])[0][-1],
                           np.where(self.lon >= self.domain["lon_max"])[0][0] + 1))
-        offset_0 = self.slice_in[0].start
-        offset_1 = self.slice_in[1].start
         print("Inner domain size: " + str(self.elevation[self.slice_in].shape))
-        elevation_ortho = np.ascontiguousarray(self.elevation[self.slice_in])
-
 
         # Compute ellipsoidal heights
         #elevation += hray.geoid.undulation(lon, lat, geoid="EGM96")  # [m]
@@ -241,7 +231,7 @@ class CurvedDEMHorizon:
                                                               self.lat[self.slice_in[0]]))
         vec_north_ecef = hray.direction.north_dir(x_ecef[self.slice_in], y_ecef[self.slice_in],
                                                   z_ecef[self.slice_in], vec_norm_ecef,
-                                                  ellps=ellps)
+                                                  ellps=self.ellps)
         del x_ecef, y_ecef, z_ecef
         self.vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, self.trans_ecef2enu)
         self.vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, self.trans_ecef2enu)
@@ -319,7 +309,7 @@ class CurvedDEMHorizon:
                     lon=(["lon"], self.lon[self.slice_in[1]], {"units": "degree"}),
                 ),
                 data_vars=dict(
-                    elevation=(["lat", "lon"], elevation[slice_in],
+                    elevation=(["lat", "lon"], self.elevation[self.slice_in],
                                {"long_name": "ellipsoidal height", "units": "m"}),
                     slope=(["lat", "lon"], slope,
                            {"long_name": "slope angle", "units": "radian"}),
@@ -333,6 +323,13 @@ class CurvedDEMHorizon:
 
         return ds
 
+
+#%%
+#========= Example usage ========
+
+if __name__ == "__main__":
+
+    print("WARNING: Example TBI")
 
 
 
