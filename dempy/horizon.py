@@ -34,6 +34,7 @@ class PlanarDEMHorizon:
 
         TODO:
         - [ ] test and debug
+        - [ ] add possibility to derive domain automatically from dem itself and dist_search
 
         """
         self.file_dem = Path(dem_file)
@@ -85,7 +86,7 @@ class PlanarDEMHorizon:
         vec_north = np.zeros((dem_dim_0 - (2 * offset_0),
                               dem_dim_1 - (2 * offset_1), 3), dtype=np.float32)
         vec_north[:, :, 1] = 1.0
-
+        #pdb.set_trace()
         # Merge vertex coordinates and pad geometry buffer
         self.vert_grid = hray.auxiliary.rearrange_pad_buffer(*np.meshgrid(self.x, self.y), self.elevation)
 
@@ -103,7 +104,7 @@ class PlanarDEMHorizon:
         # Compute horizon
         self.hori, self.azimuth = hray.horizon.horizon_gridded(
             self.vert_grid, dem_dim_0, dem_dim_1,
-            self.vec_norm_enu, self.vec_north_enu,
+            self.vec_norm, self.vec_north,
             offset_0, offset_1,
             dist_search=self.dist_search,
             azim_num=azim_num)
