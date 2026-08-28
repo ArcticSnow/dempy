@@ -1,3 +1,6 @@
 dempy.egg-info/
 dist/
 dempy/__pycache__/
+docu/
+.venv/
+.python_version

@@ -1,0 +1,38 @@
+site_name: Dempy
+site_url: https://dempy.readthedocs.io/en/latest/
+site_author: Simon Filhol, Hugo Merzisen, Leo Barrois
+copyright: GNU GPL3
+nav:
+    - Home: index.md
+    - Use Cases: 00_use_cases.md
+    - Installation: 01_install.md
+    - Quick Start: 02_quickstart.md
+    - Datasets: 03_datasetSources.md
+    - Examples: 04_examples.md
+    - Features: 05_features.md
+    - Development: 06_development.md
+    - FAQ: 20_FAQ.md
+    - Section_1:
+        - topoclass: ex1.md
+        - topo_sub: ex2.md
+
+
+theme:
+  name: material
+  palette:
+    primary: teal
+  logo: logo.png
+markdown_extensions:
+  - md_in_html
+  - attr_list
+  - pymdownx.highlight:
+      use_pygments: true
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - footnotes
+plugins:
+  - search
+  - bibtex:
+      bib_file: docs/refs.bib
