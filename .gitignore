@@ -4,3 +4,6 @@ dempy/__pycache__/
 docu/
 .venv/
 .python_version
+# pixi environments
+.pixi/*
+!.pixi/config.toml
