@@ -1,7 +1,7 @@
 # README
 S. Filhol, March 2026
 
-![](./doc/docs.logo.png)
+![](https://github.com/ArcticSnow/dempy/blob/main/doc/docs/logo.png)
 
 This is a fresh start of `dempy` that had become too cumbersome to track. `dempy` intents to bring together a collection of tools to work with Digital Elevation Models. `dempy` started some years ago under Python 2.7 and could use some refreshing and cleanup.
 
