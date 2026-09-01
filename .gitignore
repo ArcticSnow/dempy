@@ -7,3 +7,5 @@ docu/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+src/dempy/__pycache__
+marimo/__marimo__/session
