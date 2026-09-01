@@ -32,3 +32,14 @@ scipy = ">=1.18.0,<2"
 zarr = ">=3.3.0,<4"
 opencv = ">=5.0.0,<6"
 marimo = ">=0.24.0,<0.25"
+
+[tool.pixi.feature.dev.dependencies]
+mkdocs = "*"
+sphinx_rtd_theme = "*"
+mkdocs-material = "*"
+pygments = "*"
+mkdocs-bibtex = ">=4.4.0,<5"
+
+
+[tool.pixi.environments]
+default = { features = ["dev"] }
