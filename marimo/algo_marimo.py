@@ -30,12 +30,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _(plot_dem):
-    plot_dem
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
@@ -106,7 +100,7 @@ def _(open_dataset):
 @app.cell
 def _(full_dem):
     plot_dem = full_dem.isel(x=slice(None,None,10), y=slice(None,None,10)).plot()
-    return (plot_dem,)
+    return
 
 
 @app.cell(hide_code=True)
