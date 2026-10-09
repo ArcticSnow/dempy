@@ -1,0 +1,7 @@
+[ai]
+enabled = true
+rules = """
+First rule
+Second rule
+"""
+

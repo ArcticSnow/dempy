@@ -150,7 +150,7 @@ def _(SI, mo, plt):
 
 @app.cell
 def _(mo):
-    elevation_pick = mo.ui.slider(start=0, stop=0.9, step=0.05, value=0.5, show_value=True, label="Changer la pente des rayons solaires", full_width=True, debounce=True)
+    elevation_pick = mo.ui.slider(start=0, stop=0.9, step=0.05, value=0.1, show_value=True, label="Changer la pente des rayons solaires", full_width=True, debounce=True)
     return (elevation_pick,)
 
 

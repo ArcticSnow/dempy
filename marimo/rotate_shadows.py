@@ -38,7 +38,7 @@ def _():
 
 
 @app.cell
-def _(mo):
+def ui_elements(mo):
     theta_ui= mo.ui.slider(start=-1, stop=1, step=0.05, value=0,debounce=True)
     elevation_ui = mo.ui.slider(start=0.05, stop=2, step=0.05, debounce=True)
     mo.md(rf"$\theta$ {theta_ui},  Z{elevation_ui}")
@@ -46,7 +46,7 @@ def _(mo):
 
 
 @app.cell
-def _(elevation_ui, np, theta_ui):
+def read_ui_elements(elevation_ui, np, theta_ui):
     theta = theta_ui.value*np.pi
     Z_sun = elevation_ui.value
     return Z_sun, theta

@@ -29,10 +29,11 @@ def get_target_grid(centered_dem):
     grid is arbitrary: we won't necessarily find points that map in the original dem we have to choose wisely
     """
     dx = (centered_dem.x[1] - centered_dem.x[0]).item()
-    nx = np.sqrt(2)*centered_dem.sizes['x']
-    ny = np.sqrt(2)*centered_dem.sizes['y']
-    xf = np.arange(-1*int(nx/2), int(nx/2))*dx
-    yf = np.arange(-1*int(ny/2), int(ny/2))*dx
+    max_size = np.sqrt(2)*max(centered_dem.sizes['x'], centered_dem.sizes['x'])
+    # nx = np.sqrt(2)*centered_dem.sizes['x']
+    # ny = np.sqrt(2)*centered_dem.sizes['y']
+    xf = np.arange(-1*int(max_size/2), int(max_size/2))*dx
+    yf = np.arange(-1*int(max_size/2), int(max_size/2))*dx
     grid = xr.DataArray(
         dims=("y", "x"),
         coords={"x": xf, "y": yf}

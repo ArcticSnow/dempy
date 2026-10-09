@@ -2,15 +2,13 @@ import xarray as xr
 import numpy as np
 from dempy.data import open_dataset
 from dempy.rotate import Transformer, get_rotated_dem, get_target_grid
+import matplotlib.pyplot as plt 
 
 
 dem_o = (open_dataset("dem_alp")
        .isel(band=0).band_data
        .isel(x=slice(1500, 2000), y=slice(3000,3500))
        )
-
-
-
 
 
 T = Transformer(dem_o)
@@ -25,8 +23,14 @@ demrot = get_rotated_dem(dem, target_grid, theta)
 demback = get_rotated_dem(demrot, dem, -1*theta)
 
 
-demrot.plot(); plt.show()
+
+# Plot a slice of demrot for a constant x value
+x_const = demrot.x.values[len(demrot.x) // 2]
+demrot.sel(x=x_const, method="nearest").plot()
+plt.show()
 demback.plot(); plt.show()
+
+
 
 
 demback

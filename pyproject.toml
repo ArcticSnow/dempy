@@ -9,6 +9,9 @@ version = "0.1.0"
 build-backend = "hatchling.build"
 requires = ["hatchling"]
 
+[tool.marimo.runtime]
+watcher_on_save = "autorun"
+
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
@@ -31,7 +34,12 @@ pyfftw = ">=0.15.1,<0.16"
 scipy = ">=1.18.0,<2"
 zarr = ">=3.3.0,<4"
 opencv = ">=5.0.0,<6"
-marimo = ">=0.24.0,<0.25"
+marimo = "==0.25.1"
+openai = ">=2.53.0,<3"
+mcp = ">=1"
+pydantic = ">=2"
+skyfield = ">=1.54,<2"
+netcdf4 = ">=1.7.4,<2"
 
 [tool.pixi.feature.dev.dependencies]
 mkdocs = "*"
@@ -40,7 +48,16 @@ mkdocs-material = "*"
 pygments = "*"
 mkdocs-bibtex = ">=4.4.0,<5"
 ipython = ">=9.17.1,<10"
+watchdog = ">=6.0.0,<7"
+pydantic-ai = ">=2.36.0,<3"
 
 
 [tool.pixi.environments]
 default = { features = ["dev"] }
+
+
+[tool.marimo.ai]
+rules = """
+First rule
+Third rule
+"""
