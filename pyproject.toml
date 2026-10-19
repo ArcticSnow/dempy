@@ -48,7 +48,6 @@ mkdocs-material = "*"
 pygments = "*"
 mkdocs-bibtex = ">=4.4.0,<5"
 ipython = ">=9.17.1,<10"
-watchdog = ">=6.0.0,<7"
 pydantic-ai = ">=2.36.0,<3"
 
 

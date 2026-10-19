@@ -249,7 +249,7 @@ def _(shadowso):
 def _(demo, np, shadowso):
     shadowsl = shadowso
 
-    for shift in range(100):
+    for shift in range(500):
         shadowsl = shadowsl | ((demo - demo.shift(y=-shift) - shift*np.tan(0.15)) < 0)
     return (shadowsl,)
 
@@ -263,6 +263,32 @@ def _(demo):
 @app.cell
 def _(shadowsl):
     (1-shadowsl).plot()
+    return
+
+
+@app.cell
+def _(dem, np, xr):
+    horizons = xr.zeros_like(dem)
+
+    for _shift in range(300):
+        # diffdemo = np.atan((dem.shift(y=-_shift) - dem)/(1.5*_shift))
+        diffdemo = (dem.shift(y=-_shift) - dem)/(1.5*_shift)
+        horizons = diffdemo.where(diffdemo >=horizons, horizons)
+
+    horizons = np.atan(horizons)
+    horizons.plot()
+    return (horizons,)
+
+
+@app.cell
+def _(horizons):
+    (horizons < 0.05).plot()
+    return
+
+
+@app.cell
+def _(horizons):
+    horizons.plot.hist(bins=50)
     return
 
 

@@ -3,6 +3,30 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .rotate import get_rotated_dem, get_target_grid
 
+class HorizonComputer:
+
+    def __init__(self, dem):
+        self.dem = dem
+        self.y_spacing = (dem.y.isel(y=0) - dem.y.isel(y=1)).item()
+        self.diffs_dem = []
+        self.horizons = []
+        self.steps = []
+
+    def step(self, step_size):
+        shift = int(np.array(self.steps).sum() + step_size)
+        if len(self.steps) == 0: # first step
+            diff = (self.dem.shift(y=-shift) - self.dem)/(self.y_spacing*shift)
+            self.horizons.append(diff.where(~diff.isnull(),0))
+            self.diffs_dem.append(diff)
+            self.steps.append(step_size)
+            return
+        diff = (self.dem.shift(y=-1*shift) - self.dem)/(self.y_spacing*shift)
+        self.horizons.append(diff.where(diff > self.horizons[-1], self.horizons[-1]))
+        self.diffs_dem.append(diff)
+        self.steps.append(step_size)
+
+
+
 
 class ShadowIterator():
 
