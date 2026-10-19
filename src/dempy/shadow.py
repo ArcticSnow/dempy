@@ -91,7 +91,7 @@ class DEMShadowMapper:
                                                               self.lat[self.slice_in[0]]))
         vec_north_ecef = hray.direction.north_dir(x_ecef[self.slice_in], y_ecef[self.slice_in],
                                                   z_ecef[self.slice_in], vec_norm_ecef,
-                                                  ellps=ellps)
+                                                  ellps=self.ellps)
         del x_ecef, y_ecef, z_ecef
         vec_norm_enu = hray.transform.ecef2enu_vector(vec_norm_ecef, self.trans_ecef2enu)
         vec_north_enu = hray.transform.ecef2enu_vector(vec_north_ecef, self.trans_ecef2enu)
@@ -125,6 +125,7 @@ class DEMShadowMapper:
                                 offset_0, offset_1, self.vec_tilt_enu, vec_norm_enu,
                                 surf_enl_fac, mask=mask, elevation=elevation_ortho,
                                 refrac_cor=True)
+
 
     def get_solarposition(self, tstep):
         """
