@@ -1,6 +1,5 @@
 [project]
 authors = [{name = "Hugo Merzisen", email = "hugo.merzisen@meteo.fr"}]
-dependencies = []
 name = "dempy"
 requires-python = ">= 3.11"
 version = "0.1.0"
@@ -69,6 +68,9 @@ pydantic-ai = ">=2.36.0,<3"
 
 [tool.pixi.environments]
 default = { features = ["dev"] }
+
+[dependency-groups]
+dev = ["matplotlib-backend-kitty>=2.1.2,<3"]
 
 
 [tool.marimo.ai]

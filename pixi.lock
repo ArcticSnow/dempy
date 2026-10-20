@@ -499,6 +499,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/zict-3.0.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/1f/90/c1770c3443ae8ba4104db158df2d6a964394553b17bc195fdccd648685ce/matplotlib_backend_kitty-2.1.2-py3-none-any.whl
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/affine-3.0.0-pyhd8ed1ab_0.conda
@@ -915,6 +916,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-ng-2.3.3-h31dac16_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - pypi: ./
+      - pypi: https://files.pythonhosted.org/packages/1f/90/c1770c3443ae8ba4104db158df2d6a964394553b17bc195fdccd648685ce/matplotlib_backend_kitty-2.1.2-py3-none-any.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
@@ -13199,3 +13201,9 @@ packages:
 - pypi: ./
   name: dempy
   requires_python: '>=3.11'
+- pypi: https://files.pythonhosted.org/packages/1f/90/c1770c3443ae8ba4104db158df2d6a964394553b17bc195fdccd648685ce/matplotlib_backend_kitty-2.1.2-py3-none-any.whl
+  name: matplotlib-backend-kitty
+  version: 2.1.2
+  sha256: 6f11f1b734d64df3712539833072be6dc66e4112320974bf614d2dff5dc2e8b5
+  requires_dist:
+  - matplotlib

@@ -155,8 +155,31 @@ class DEMShadowMapper:
         y = d.m * np.cos(alt.radians) * np.cos(az.radians)
         z = d.m * np.sin(alt.radians)
         sun_position = np.array([x, y, z], dtype=np.float32)
-
         return sun_position, alt, az
+
+
+    def compute_sw_dir_cor_map_from_position(self, sun_elevation_rad, sun_azimuth_rad, sun_distance_km):
+        """
+        """
+        x = sun_distance_km * np.cos(sun_elevation_rad) * np.sin(sun_azimuth_rad)
+        y = sun_distance_km * np.cos(sun_elevation_rad) * np.cos(sun_azimuth_rad)
+        z = sun_distance_km * np.sin(sun_elevation_rad)
+        sun_position = np.array([x, y, z], dtype=np.float32)
+        sw_dir_cor_buffer = np.zeros( self.vec_tilt_enu.shape[:2], dtype=np.float32)
+        self.terrain.sw_dir_cor(sun_position, sw_dir_cor_buffer)
+        out = xr.DataArray(
+            sw_dir_cor_buffer,
+            dims=("lat", "lon"),
+            coords={
+                "lat": self.lat[self.slice_in[0]],
+                "lon": self.lon[self.slice_in[1]],
+            },
+            name="sw_dir_cor",
+        )
+        out = out.rio.write_crs(4326)
+        return out
+
+    
 
 
     def compute_sw_dir_cor_map(self, tstep):
