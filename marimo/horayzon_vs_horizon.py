@@ -46,8 +46,20 @@ with app.setup:
 
 @app.cell
 def _():
+    dem_4326.band_data.plot()
+    return
+
+
+@app.cell
+def _():
     sw_reproj_match = ds_series.rename(dict(lon="x", lat="y")).sw_dir_cor.transpose('time', 'y', 'x').rio.reproject_match(dem).isel(time=0)
     return (sw_reproj_match,)
+
+
+@app.cell
+def _(sw_reproj_match):
+    sw_reproj_match.plot()
+    return
 
 
 @app.cell
@@ -91,12 +103,18 @@ def get_sun_azimuth_elevation(lat0, lon0, date_):
 
 @app.cell
 def _(azi):
-    np.cos(np.deg2rad(180-azi))
+    azi
     return
 
 
 @app.cell
-def _(azi):
+def _():
+    dem
+    return
+
+
+@app.cell
+def _(azi, deviation_lambert93):
     sun_azimuth = np.deg2rad(azi)
     x_center = dem.x.mean().item()
     y_center = dem.y.mean().item()
@@ -105,7 +123,7 @@ def _(azi):
     dem_centered.coords['y'] = dem.y - y_center
     target_grid = get_target_grid(dem_centered)
     target_grid    
-    dem_rotation_angle = sun_azimuth - np.pi
+    dem_rotation_angle = sun_azimuth - np.pi + 4*deviation_lambert93
     demrot = get_rotated_dem(dem_centered, target_grid, dem_rotation_angle)
     horizon = HorizonComputer(demrot)
     for _step_size in 20*[1] + 20*[4]:
@@ -113,9 +131,24 @@ def _(azi):
     horizon_for_date = get_rotated_dem(horizon.horizons[-1], dem_centered, -1*dem_rotation_angle)
     horizon_for_date.coords['x'] = horizon_for_date.x + x_center
     horizon_for_date.coords['y'] = horizon_for_date.y + y_center
-    horizon_for_date = np.atan(horizon_for_date*np.cos(np.deg2rad(180-azi)))
+    horizon_for_date = np.atan(horizon_for_date)
     horizon_for_date.plot()
     return (horizon_for_date,)
+
+
+@app.cell
+def _(azi, horizon_for_date):
+    horizon_for_date_c = horizon_for_date*np.cos(np.deg2rad(180-azi))
+    return
+
+
+@app.cell
+def _():
+    delta_lon = (dem.isel(x=2500, y=2000).lon - dem.isel(x=2500, y=0).lon).item()
+    delta_lat = (dem.isel(x=2500, y=2000).lat - dem.isel(x=2500, y=0).lat).item()
+    deviation_lambert93 = np.atan(delta_lon/delta_lat) # deviation from through south (radians)
+    deviation_lambert93
+    return (deviation_lambert93,)
 
 
 @app.cell
@@ -154,8 +187,14 @@ def _(sw_reproj_match):
 
 
 @app.cell
+def _(elev):
+    elev
+    return
+
+
+@app.cell
 def _(elev, horizon_for_date):
-    shadow2 = (horizon_for_date <= np.deg2rad(elev) +0.3)
+    shadow2 = (horizon_for_date <= np.deg2rad(elev))
     shadow2.plot()
     return (shadow2,)
 

@@ -10,3 +10,5 @@ docu/
 src/dempy/__pycache__
 marimo/__marimo__/session
 test/__marimo__/session
+de421.bsp
+dem_4326.nc
