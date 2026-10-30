@@ -36,6 +36,7 @@ path = pooch.retrieve(
     )
 
 
+
 dem = xr.open_dataset(path)
 
 demtest = dem.isel(band=0).isel(x=slice(None, None, 10), y=slice(None, None,10))
@@ -44,21 +45,17 @@ demtest = dem.isel(band=0).isel(x=slice(None, None, 10), y=slice(None, None,10))
 # computing svf with topocalc
 svf_topocalc = viewf(demtest.band_data.values.astype('float64'), spacing=30) # douloureusement long...
 
-svf_topocalc
-demtest['svf'] = svf_topocalc[0]
-
 demtest['svf'] = xr.DataArray(svf_topocalc[0], dims= ('y','x'))
 
+demtest.svf.plot(); plt.show()
 
 
 gradient_topocalc = gradient_d8(demtest.band_data.values, 30, 30)
 
 demtest['gradient_d8'] = xr.DataArray(gradient_topocalc[0], dims= ('y','x'))
 
-demtest.gradient_d8.plot()
-plt.show()
+demtest.gradient_d8.plot(); plt.show()
 
 
 hcos = horizon(70, demtest.band_data.values, 30)
 
-hcos
