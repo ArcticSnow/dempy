@@ -12,8 +12,8 @@ nav:
     - Features: 05_features.md
     - Development: 06_development.md
     - FAQ: 20_FAQ.md
-    - Section_1:
-        - topoclass: ex1.md
+    - calculating_shadows:
+        - Available methods: calculating_shadows/available_methods.md
         - topo_sub: ex2.md
 
 
